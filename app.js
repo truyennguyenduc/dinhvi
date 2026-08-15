@@ -1,5 +1,5 @@
 // Mật khẩu quản trị để xóa vị trí (Bác có thể đổi mật khẩu tại đây)
-const ADMIN_PASSWORD = "123"; 
+const ADMIN_PASSWORD = "Truyen&1978"; 
 
 document.addEventListener("DOMContentLoaded", displayLocations);
 
