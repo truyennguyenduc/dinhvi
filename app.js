@@ -1,4 +1,3 @@
-// Tải danh sách vị trí từ LocalStorage khi mở ứng dụng
 document.addEventListener("DOMContentLoaded", displayLocations);
 
 function getLocation() {
@@ -14,82 +13,102 @@ function getLocation() {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 const time = new Date().toLocaleString("vi-VN");
-                const id = Date.now(); // Tạo ID duy nhất cho mỗi vị trí
 
-                const newLocation = { id, name, note, lat, lng, time };
+                const newLocation = { id: Date.now(), name, note, lat, lng, time };
                 
-                // Lưu vào LocalStorage
                 let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-                locations.unshift(newLocation); // Thêm lên đầu danh sách
+                locations.unshift(newLocation);
                 localStorage.setItem("user_locations", JSON.stringify(locations));
 
-                // Reset ô nhập liệu sau khi lưu
                 nameInput.value = "";
                 noteInput.value = "";
 
                 displayLocations();
             },
             (error) => {
-                alert("Không thể lấy vị trí. Vui lòng bật GPS và cấp quyền truy cập vị trí.");
+                alert("Không thể lấy vị trí. Vui lòng bật GPS và cho phép ứng dụng truy cập.");
             },
             { enableHighAccuracy: true }
         );
     } else {
-        alert("Trình duyệt của bạn không hỗ trợ Geolocation.");
+        alert("Trình duyệt không hỗ trợ Geolocation.");
     }
 }
 
 function displayLocations() {
     const listElement = document.getElementById("locationList");
+    const keyword = document.getElementById("searchInput").value.toLowerCase().trim();
     listElement.innerHTML = "";
     
     let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
 
-    if (locations.length === 0) {
-        listElement.innerHTML = "<li style='text-align: center; color: #888;'>Chưa có vị trí nào được lưu.</li>";
+    // Lọc theo từ khóa tìm kiếm
+    let filteredLocations = locations.filter(loc => {
+        const nameMatch = loc.name.toLowerCase().includes(keyword);
+        const noteMatch = (loc.note || "").toLowerCase().includes(keyword);
+        const coordsMatch = `${loc.lat},${loc.lng}`.includes(keyword);
+        return nameMatch || noteMatch || coordsMatch;
+    });
+
+    if (filteredLocations.length === 0) {
+        listElement.innerHTML = "<li style='text-align: center; color: #777;'>Không tìm thấy vị trí nào.</li>";
         return;
     }
 
-    locations.forEach((loc, index) => {
+    filteredLocations.forEach((loc) => {
         const li = document.createElement("li");
-        
-        // Link mở Google Maps
         const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
-        let noteHtml = loc.note ? `<div class="note"><b>Ghi chú:</b> ${escapeHtml(loc.note)}</div>` : "";
+
+        // Toggle ẩn/hiện menu nút bấm khi chọn vào dòng
+        li.onclick = function(e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
+            document.querySelectorAll('#locationList li').forEach(item => {
+                if (item !== li) item.classList.remove('selected');
+            });
+            li.classList.toggle('selected');
+        };
+
+        let noteHtml = loc.note ? `<div class="loc-note">Ghi chú: ${escapeHtml(loc.note)}</div>` : "";
 
         li.innerHTML = `
-            <div class="loc-title">📍 ${escapeHtml(loc.name)}</div>
-            <span class="time">🕒 ${loc.time}</span>
-            <div>Tọa độ: <b>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</b></div>
+            <div class="loc-name">📍 ${escapeHtml(loc.name)}</div>
             ${noteHtml}
+            <span class="time">Thời gian: ${loc.time}</span>
+            <div class="coords">Tọa độ: <b>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</b></div>
+            <a class="maps-link" href="${mapsUrl}" target="_blank">Mở trên Google Maps ➔</a>
             
-            <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <a class="maps-link" href="${mapsUrl}" target="_blank" style="margin-right: auto;">🗺️ Mở Google Maps ➔</a>
-                <button onclick="editLocation(${index})" style="width: auto; padding: 6px 12px; background: #ffc107; color: #333; margin: 0; font-size: 13px;">✏️ Sửa</button>
-                <button onclick="deleteLocation(${index})" style="width: auto; padding: 6px 12px; background: #dc3545; color: white; margin: 0; font-size: 13px;">🗑️ Xóa</button>
+            <div class="action-bar">
+                <button class="btn-edit" onclick="editLocation(${loc.id})">✏️ Sửa vị trí</button>
+                <button class="btn-delete" onclick="deleteLocation(${loc.id})">🗑️ Xóa vị trí</button>
             </div>
         `;
         listElement.appendChild(li);
     });
 }
 
-// Hàm Xóa từng vị trí
-function deleteLocation(index) {
+function filterLocations() {
+    displayLocations();
+}
+
+function deleteLocation(id) {
     let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-    if (confirm(`Bạn có chắc muốn xóa vị trí "${locations[index].name}"?`)) {
-        locations.splice(index, 1);
+    const item = locations.find(loc => loc.id === id);
+    if (confirm(`Bạn có muốn xóa vị trí "${item ? item.name : ''}"?`)) {
+        locations = locations.filter(loc => loc.id !== id);
         localStorage.setItem("user_locations", JSON.stringify(locations));
         displayLocations();
     }
 }
 
-// Hàm Sửa tên & ghi chú vị trí
-function editLocation(index) {
+function editLocation(id) {
     let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
+    const index = locations.findIndex(loc => loc.id === id);
+    if (index === -1) return;
+
     const item = locations[index];
 
     const newName = prompt("Nhập tên vị trí mới:", item.name);
-    if (newName === null) return; // Bấm Cancel thì thoát
+    if (newName === null) return;
 
     const newNote = prompt("Nhập ghi chú mới:", item.note || "");
     if (newNote === null) return;
@@ -101,15 +120,13 @@ function editLocation(index) {
     displayLocations();
 }
 
-// Hàm Xóa toàn bộ lịch sử
 function clearLocations() {
-    if (confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ danh sách vị trí đã lưu?")) {
+    if (confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ lịch sử đã lưu?")) {
         localStorage.removeItem("user_locations");
         displayLocations();
     }
 }
 
-// Hỗ trợ mã hóa HTML chống lỗi giao diện khi nhập ký tự đặc biệt
 function escapeHtml(text) {
     return text
         .replace(/&/g, "&amp;")
