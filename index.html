@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghi Nhớ Vị Trí GPS</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 15px; margin: 0; background: #f4f4f9; }
+        h2 { color: #333; text-align: center; }
+        button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-get { background: #28a745; color: white; }
+        .btn-clear { background: #dc3545; color: white; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: white; margin-bottom: 10px; padding: 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .time { font-size: 12px; color: #666; display: block; margin-bottom: 5px; }
+        a { color: #007bff; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Ứng Dụng Lấy Định Vị</h2>
+    <button class="btn-get" onclick="getLocation()">Lấy vị trí hiện tại</button>
+    <button class="btn-clear" onclick="clearLocations()">Xóa lịch sử vị trí</button>
+
+    <h3>Danh sách vị trí đã lưu:</h3>
+    <ul id="locationList"></ul>
+
+    <script src="app.js"></script>
+</body>
+</html>
