@@ -14,22 +14,23 @@ function getLocation() {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 const time = new Date().toLocaleString("vi-VN");
+                const id = Date.now(); // Tạo ID duy nhất cho mỗi vị trí
 
-                const newLocation = { name, note, lat, lng, time };
+                const newLocation = { id, name, note, lat, lng, time };
                 
                 // Lưu vào LocalStorage
                 let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
                 locations.unshift(newLocation); // Thêm lên đầu danh sách
                 localStorage.setItem("user_locations", JSON.stringify(locations));
 
-                // Reset ô nhập liệu sau khi lưu thành công
+                // Reset ô nhập liệu sau khi lưu
                 nameInput.value = "";
                 noteInput.value = "";
 
                 displayLocations();
             },
             (error) => {
-                alert("Không thể lấy vị trí. Vui lòng bật GPS và cấp quyền truy cập vị trí trên trình duyệt.");
+                alert("Không thể lấy vị trí. Vui lòng bật GPS và cấp quyền truy cập vị trí.");
             },
             { enableHighAccuracy: true }
         );
@@ -45,16 +46,15 @@ function displayLocations() {
     let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
 
     if (locations.length === 0) {
-        listElement.innerHTML = "<li>Chưa có vị trí nào được lưu.</li>";
+        listElement.innerHTML = "<li style='text-align: center; color: #888;'>Chưa có vị trí nào được lưu.</li>";
         return;
     }
 
-    locations.forEach((loc) => {
+    locations.forEach((loc, index) => {
         const li = document.createElement("li");
         
-        // Link mở Google Maps trực tiếp
+        // Link mở Google Maps
         const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
-
         let noteHtml = loc.note ? `<div class="note"><b>Ghi chú:</b> ${escapeHtml(loc.note)}</div>` : "";
 
         li.innerHTML = `
@@ -62,20 +62,54 @@ function displayLocations() {
             <span class="time">🕒 ${loc.time}</span>
             <div>Tọa độ: <b>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</b></div>
             ${noteHtml}
-            <a class="maps-link" href="${mapsUrl}" target="_blank">🗺️ Mở trên Google Maps ➔</a>
+            
+            <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <a class="maps-link" href="${mapsUrl}" target="_blank" style="margin-right: auto;">🗺️ Mở Google Maps ➔</a>
+                <button onclick="editLocation(${index})" style="width: auto; padding: 6px 12px; background: #ffc107; color: #333; margin: 0; font-size: 13px;">✏️ Sửa</button>
+                <button onclick="deleteLocation(${index})" style="width: auto; padding: 6px 12px; background: #dc3545; color: white; margin: 0; font-size: 13px;">🗑️ Xóa</button>
+            </div>
         `;
         listElement.appendChild(li);
     });
 }
 
+// Hàm Xóa từng vị trí
+function deleteLocation(index) {
+    let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
+    if (confirm(`Bạn có chắc muốn xóa vị trí "${locations[index].name}"?`)) {
+        locations.splice(index, 1);
+        localStorage.setItem("user_locations", JSON.stringify(locations));
+        displayLocations();
+    }
+}
+
+// Hàm Sửa tên & ghi chú vị trí
+function editLocation(index) {
+    let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
+    const item = locations[index];
+
+    const newName = prompt("Nhập tên vị trí mới:", item.name);
+    if (newName === null) return; // Bấm Cancel thì thoát
+
+    const newNote = prompt("Nhập ghi chú mới:", item.note || "");
+    if (newNote === null) return;
+
+    locations[index].name = newName.trim() || "Vị trí không tên";
+    locations[index].note = newNote.trim();
+
+    localStorage.setItem("user_locations", JSON.stringify(locations));
+    displayLocations();
+}
+
+// Hàm Xóa toàn bộ lịch sử
 function clearLocations() {
-    if (confirm("Bạn có chắc chắn muốn xóa toàn bộ danh sách vị trí đã lưu?")) {
+    if (confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ danh sách vị trí đã lưu?")) {
         localStorage.removeItem("user_locations");
         displayLocations();
     }
 }
 
-// Hàm hỗ trợ chống lỗi hiển thị khi nhập ký tự đặc biệt
+// Hỗ trợ mã hóa HTML chống lỗi giao diện khi nhập ký tự đặc biệt
 function escapeHtml(text) {
     return text
         .replace(/&/g, "&amp;")
