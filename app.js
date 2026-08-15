@@ -1,3 +1,6 @@
+// Mật khẩu quản trị để xóa vị trí (Bác có thể đổi mật khẩu tại đây)
+const ADMIN_PASSWORD = "123"; 
+
 document.addEventListener("DOMContentLoaded", displayLocations);
 
 function getLocation() {
@@ -37,12 +40,12 @@ function getLocation() {
 
 function displayLocations() {
     const listElement = document.getElementById("locationList");
-    const keyword = document.getElementById("searchInput").value.toLowerCase().trim();
+    const searchInput = document.getElementById("searchInput");
+    const keyword = searchInput ? searchInput.value.toLowerCase().trim() : "";
     listElement.innerHTML = "";
     
     let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
 
-    // Lọc theo từ khóa tìm kiếm
     let filteredLocations = locations.filter(loc => {
         const nameMatch = loc.name.toLowerCase().includes(keyword);
         const noteMatch = (loc.note || "").toLowerCase().includes(keyword);
@@ -59,7 +62,6 @@ function displayLocations() {
         const li = document.createElement("li");
         const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
 
-        // Toggle ẩn/hiện menu nút bấm khi chọn vào dòng
         li.onclick = function(e) {
             if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
             document.querySelectorAll('#locationList li').forEach(item => {
@@ -90,16 +92,23 @@ function filterLocations() {
     displayLocations();
 }
 
+// Xóa 1 vị trí (Cần mật khẩu)
 function deleteLocation(id) {
-    let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-    const item = locations.find(loc => loc.id === id);
-    if (confirm(`Bạn có muốn xóa vị trí "${item ? item.name : ''}"?`)) {
+    const password = prompt("Nhập mật khẩu quản trị để xóa vị trí này:");
+    if (password === null) return;
+
+    if (password === ADMIN_PASSWORD) {
+        let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
         locations = locations.filter(loc => loc.id !== id);
         localStorage.setItem("user_locations", JSON.stringify(locations));
         displayLocations();
+        alert("Đã xóa vị trí thành công.");
+    } else {
+        alert("Sai mật khẩu quản trị!");
     }
 }
 
+// Sửa vị trí (Không cần mật khẩu)
 function editLocation(id) {
     let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
     const index = locations.findIndex(loc => loc.id === id);
@@ -120,10 +129,17 @@ function editLocation(id) {
     displayLocations();
 }
 
+// Xóa toàn bộ lịch sử (Nút bấm phía trên - Cần mật khẩu)
 function clearLocations() {
-    if (confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ lịch sử đã lưu?")) {
+    const password = prompt("Nhập mật khẩu quản trị để XÓA TOÀN BỘ lịch sử:");
+    if (password === null) return;
+
+    if (password === ADMIN_PASSWORD) {
         localStorage.removeItem("user_locations");
         displayLocations();
+        alert("Đã xóa toàn bộ lịch sử.");
+    } else {
+        alert("Sai mật khẩu quản trị!");
     }
 }
 
