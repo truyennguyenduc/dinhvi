@@ -5,31 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ghi Nhớ Vị Trí GPS</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 15px; margin: 0; background: #f4f4f9; }
-        h2 { color: #333; text-align: center; margin-top: 10px; }
+        body { font-family: Arial, sans-serif; padding: 15px; margin: 0; background: #f4f4f9; color: #333; }
+        h2 { text-align: center; margin-top: 10px; margin-bottom: 20px; font-size: 22px; }
         
         .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #444; }
         input[type="text"], textarea { 
             width: 100%; 
-            padding: 10px; 
+            padding: 12px; 
             border: 1px solid #ccc; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             box-sizing: border-box; 
             font-size: 15px;
+            background: #fff;
         }
-        textarea { height: 70px; resize: vertical; }
+        textarea { height: 80px; resize: vertical; }
 
-        button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button { width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-get { background: #28a745; color: white; }
         .btn-clear { background: #dc3545; color: white; }
         
+        .search-box { margin-top: 20px; }
+        .search-input { border: 2px solid #007bff; background: #fff; }
+
         ul { list-style-type: none; padding: 0; margin-top: 15px; }
-        li { background: white; margin-bottom: 12px; padding: 14px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .loc-title { font-size: 18px; font-weight: bold; color: #007bff; margin-bottom: 5px; }
-        .time { font-size: 12px; color: #666; display: block; margin-bottom: 8px; }
-        .note { background: #f8f9fa; padding: 8px; border-left: 3px solid #007bff; margin: 8px 0; font-size: 14px; color: #444; }
-        .maps-link { display: inline-block; margin-top: 6px; color: #28a745; text-decoration: none; font-weight: bold; }
+        li { 
+            background: white; 
+            margin-bottom: 12px; 
+            padding: 14px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #eee;
+        }
+        li:hover { border-color: #007bff; }
+        
+        .loc-name { font-size: 17px; font-weight: bold; color: #111; margin-bottom: 4px; }
+        .loc-note { font-size: 14px; color: #555; margin-bottom: 6px; font-style: italic; }
+        .time { font-size: 13px; color: #777; display: block; margin-bottom: 6px; }
+        .coords { font-size: 15px; margin-bottom: 6px; color: #222; }
+        .maps-link { display: inline-block; color: #0056b3; text-decoration: underline; font-weight: bold; font-size: 15px; }
+        
+        /* Khung chứa nút Sửa / Xóa khi click vào dòng */
+        .action-bar { 
+            display: none; 
+            margin-top: 12px; 
+            padding-top: 10px; 
+            border-top: 1px dashed #ddd; 
+            gap: 10px; 
+        }
+        .action-bar button { width: 50%; padding: 8px; font-size: 14px; margin: 0; }
+        .btn-edit { background: #ffc107; color: #000; }
+        .btn-delete { background: #dc3545; color: #fff; }
+        
+        li.selected .action-bar { display: flex; }
     </style>
 </head>
 <body>
@@ -38,7 +68,7 @@
 
     <div class="form-group">
         <label for="locName">Tên vị trí:</label>
-        <input type="text" id="locName" placeholder="Ví dụ: Cửa hàng A, Nhà khách hàng...">
+        <input type="text" id="locName" placeholder="Nhập tên vị trí...">
     </div>
 
     <div class="form-group">
@@ -49,7 +79,12 @@
     <button class="btn-get" onclick="getLocation()">Lấy vị trí hiện tại</button>
     <button class="btn-clear" onclick="clearLocations()">Xóa toàn bộ lịch sử</button>
 
-    <h3>Danh sách vị trí đã lưu:</h3>
+    <h3 style="margin-top: 25px; margin-bottom: 10px;">Danh sách vị trí đã lưu:</h3>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm tên, ghi chú, tọa độ..." oninput="filterLocations()">
+    </div>
+
     <ul id="locationList"></ul>
 
     <script src="app.js"></script>
