@@ -1,7 +1,13 @@
-// Tải danh sách vị trí từ bộ nhớ máy (LocalStorage) khi mở ứng dụng
+// Tải danh sách vị trí từ LocalStorage khi mở ứng dụng
 document.addEventListener("DOMContentLoaded", displayLocations);
 
 function getLocation() {
+    const nameInput = document.getElementById("locName");
+    const noteInput = document.getElementById("locNote");
+
+    const name = nameInput.value.trim() || "Vị trí không tên";
+    const note = noteInput.value.trim();
+
     if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -9,17 +15,21 @@ function getLocation() {
                 const lng = position.coords.longitude;
                 const time = new Date().toLocaleString("vi-VN");
 
-                const newLocation = { lat, lng, time };
+                const newLocation = { name, note, lat, lng, time };
                 
                 // Lưu vào LocalStorage
                 let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
                 locations.unshift(newLocation); // Thêm lên đầu danh sách
                 localStorage.setItem("user_locations", JSON.stringify(locations));
 
+                // Reset ô nhập liệu sau khi lưu thành công
+                nameInput.value = "";
+                noteInput.value = "";
+
                 displayLocations();
             },
             (error) => {
-                alert("Không thể lấy vị trí. Vui lòng bật GPS và cho phép truy cập vị trí.");
+                alert("Không thể lấy vị trí. Vui lòng bật GPS và cấp quyền truy cập vị trí trên trình duyệt.");
             },
             { enableHighAccuracy: true }
         );
@@ -42,13 +52,17 @@ function displayLocations() {
     locations.forEach((loc) => {
         const li = document.createElement("li");
         
-        // Link mở Google Maps trực tiếp bằng tọa độ lat,lng
+        // Link mở Google Maps trực tiếp
         const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
 
+        let noteHtml = loc.note ? `<div class="note"><b>Ghi chú:</b> ${escapeHtml(loc.note)}</div>` : "";
+
         li.innerHTML = `
-            <span class="time">Thời gian: ${loc.time}</span>
+            <div class="loc-title">📍 ${escapeHtml(loc.name)}</div>
+            <span class="time">🕒 ${loc.time}</span>
             <div>Tọa độ: <b>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</b></div>
-            <a href="${mapsUrl}" target="_blank">Mở trên Google Maps ➔</a>
+            ${noteHtml}
+            <a class="maps-link" href="${mapsUrl}" target="_blank">🗺️ Mở trên Google Maps ➔</a>
         `;
         listElement.appendChild(li);
     });
@@ -59,4 +73,14 @@ function clearLocations() {
         localStorage.removeItem("user_locations");
         displayLocations();
     }
+}
+
+// Hàm hỗ trợ chống lỗi hiển thị khi nhập ký tự đặc biệt
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
