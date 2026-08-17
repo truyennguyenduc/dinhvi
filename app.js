@@ -70,7 +70,7 @@ function fetchJobs() {
         jobsList = res.data.map(item => {
           if (typeof item === 'object' && item !== null) {
             // Nếu là Object, lấy giá trị của thuộc tính đầu tiên hoặc tên cột tương ứng
-            return item.ten_cviec || item.name || Object.values(item)[0] || "";
+            return item.ten_cviec || item.ma_khang || Object.values(item)[0] || "";
           }
           return item;
         });
@@ -90,7 +90,7 @@ function populateJobDropdowns() {
   const selectMain = document.getElementById("jobSelect");
   const selectEdit = document.getElementById("editJobSelect");
 
-  let optionsHTML = '<option value="">-- CV --</option>';
+  let optionsHTML = '<option value="">-- Công việc --</option>';
   jobsList.forEach(job => {
     // Ép kiểu chuỗi an toàn
     let jobText = (typeof job === 'object' && job !== null) ? (job.ten_cviec || Object.values(job)[0]) : job;
@@ -200,7 +200,7 @@ function getLocation() {
     (position) => {
       const locData = {
         id: Date.now(),
-        name: nameInput,
+        ma_khang: nameInput,
         ten_khang: "Đang kiểm tra...",
         ten_cviec: jobInput,
         ten_nvien: employeeInput,
@@ -291,7 +291,7 @@ function renderList(locations) {
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
 
     li.innerHTML = `
-      <div class="loc-name">${loc.name} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
+      <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
       <div class="loc-employee">👤 NV lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"} (${loc.ten_cviec ? loc.ten_cviec : "Chưa cập nhật"})</div>
       <div class="loc-note">Ghi chú: ${loc.note ? loc.note : "Không có ghi chú"}</div>
       <span class="time">🕒 ${loc.time}</span>
@@ -312,7 +312,7 @@ function renderList(locations) {
 function filterLocations() {
   const query = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allLocations.filter(loc => 
-    loc.name.toLowerCase().includes(query) ||
+    loc.ma_khang.toLowerCase().includes(query) ||
     (loc.ten_khang && loc.ten_khang.toLowerCase().includes(query)) ||
     (loc.ten_nvien && loc.ten_nvien.toLowerCase().includes(query)) ||
     (loc.ten_cviec && loc.ten_cviec.toLowerCase().includes(query)) ||    
@@ -372,7 +372,7 @@ function openEditModal(id) {
   if (!loc) return;
 
   editTargetId = id;
-  document.getElementById("editNameInput").value = loc.name;
+  document.getElementById("editNameInput").value = loc.ma_khang;
   document.getElementById("editEmployeeSelect").value = loc.ten_nvien || "";
   document.getElementById("editJobSelect").value = loc.ten_cviec || "";
   document.getElementById("editNoteInput").value = loc.note || "";
@@ -419,7 +419,7 @@ function saveEditLocation() {
     return;
   }
 
-  const duplicate = allLocations.find(item => item.name === newName && item.id !== editTargetId);
+  const duplicate = allLocations.find(item => item.ma_khang === newName && item.id !== editTargetId);
   if (duplicate) {
     showToast(`Mã KH "${newName}" đã thuộc về bản ghi khác!`, true);
     return;
@@ -443,7 +443,7 @@ function saveEditLocation() {
 
         const loc = allLocations.find(item => item.id === editTargetId);
         if (loc) {
-          loc.name = newName;
+          loc.ma_khang = newName;
           loc.ten_nvien = newEmployee;
           loc.ten_cviec = newJob;          
           loc.note = newNote;
@@ -462,7 +462,7 @@ function saveEditLocation() {
           body: JSON.stringify({
             action: "EDIT",
             id: editTargetId,
-            name: newName,
+            ma_khang: newName,
             ten_nvien: newEmployee,
             ten_cviec: newJob,           
             note: newNote,
@@ -487,7 +487,7 @@ function saveEditLocation() {
   } else {
     const loc = allLocations.find(item => item.id === editTargetId);
     if (loc) {
-      loc.name = newName;
+      loc.ma_khang = newName;
       loc.ten_nvien = newEmployee;
       loc.ten_cviec = newJob;      
       loc.note = newNote;
@@ -503,7 +503,7 @@ function saveEditLocation() {
       body: JSON.stringify({
         action: "EDIT",
         id: editTargetId,
-        name: newName,
+        ma_khang: newName,
         ten_nvien: newEmployee,
         ten_cviec: newJob,        
         note: newNote
