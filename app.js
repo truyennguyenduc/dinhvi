@@ -1,5 +1,5 @@
 // Thay URL bên dưới bằng URL ứng dụng Web Apps Script bạn vừa triển khai
-const SCRIPT_URL = "NHAU_URL_WEB_APP_CUA_BAC_VAO_DAY"; 
+const SCRIPT_URL = "https://docs.google.com/spreadsheets/d/13dMMeQn-IS6y_yoI_LVj3paZAH-e3PmNH8Nj_AR4tts/edit?pli=1&gid=0#gid=0"; 
 const ADMIN_PASSWORD = "Truyen&1978"; 
 
 document.addEventListener("DOMContentLoaded", displayLocations);
