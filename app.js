@@ -158,3 +158,28 @@ function editLocation(id, oldName, oldNote) {
     if (res.status === "success") fetchLocations();
   });
 }
+
+// Hàm hiển thị thông báo Toast góc phải, nền xanh lá, tự ẩn sau 5 giây
+function showToast(message) {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerText = message;
+
+  container.appendChild(toast);
+
+  // Hiệu ứng trượt ra
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 100);
+
+  // Tự động đóng sau 5 giây (5000ms)
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      toast.remove();
+    }, 400); // Đợi hoàn tất hiệu ứng mờ dần rồi xóa hẳn
+  }, 5000);
+}
