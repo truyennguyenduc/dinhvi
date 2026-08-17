@@ -193,3 +193,51 @@ function showToast(message) {
     }, 400); // Đợi hoàn tất hiệu ứng mờ dần rồi xóa hẳn
   }, 5000);
 }
+
+// 4. Hiển thị danh sách ra giao diện
+function renderList(locations) {
+  const listElement = document.getElementById("locationList");
+  const countElement = document.getElementById("locationCount");
+  listElement.innerHTML = "";
+
+  // Cập nhật số lượng vị trí hiển thị
+  if (countElement) {
+    if (locations.length === allLocations.length) {
+      countElement.innerText = `(${locations.length})`;
+    } else {
+      // Khi đang tìm kiếm: hiển thị dạng (Số kết quả tìm thấy / Tổng số vị trí)
+      countElement.innerText = `(${locations.length}/${allLocations.length})`;
+    }
+  }
+
+  if (locations.length === 0) {
+    listElement.innerHTML = "<li style='text-align:center; color:#888;'>Chưa có vị trí nào được lưu.</li>";
+    return;
+  }
+
+  locations.forEach(loc => {
+    const li = document.createElement("li");
+    li.onclick = (e) => {
+      if (e.target.tagName !== "BUTTON" && e.target.tagName !== "A") {
+        li.classList.toggle("selected");
+      }
+    };
+
+    const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+
+    li.innerHTML = `
+      <div class="loc-name">${loc.name}</div>
+      <div class="loc-note">${loc.note ? loc.note : "Không có ghi chú"}</div>
+      <span class="time">🕒 ${loc.time}</span>
+      <div class="coords">📍 Tọa độ: ${loc.lat}, ${loc.lng}</div>
+      <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
+      
+      <div class="action-bar">
+        <button class="btn-edit" onclick="editLocation(${loc.id})">Sửa</button>
+        <button class="btn-delete" onclick="deleteLocation(${loc.id})">Xóa</button>
+      </div>
+    `;
+
+    listElement.appendChild(li);
+  });
+}
