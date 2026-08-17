@@ -1,27 +1,26 @@
-// Thay URL Web App thu được sau khi triển khai Apps Script vào đây
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
+// Thay URL copy ở Apps Script vào giữa 2 dấu ngoặc kép này
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pI5EQMLSEQ/exec";
 
 let allLocations = [];
 
-// Tự động tải danh sách khi mở trang
 document.addEventListener("DOMContentLoaded", fetchLocations);
 
-// 1. Lấy vị trí GPS và lưu lên Google Sheet
+// 1. Lấy vị trí GPS và gửi lên Apps Script
 function getLocation() {
   const nameInput = document.getElementById("locName").value.trim();
   const noteInput = document.getElementById("locNote").value.trim();
 
   if (!nameInput) {
-    alert("Vui lòng nhập Mã khách hàng / Tên vị trí!");
+    alert("Vui lòng nhập Mã khách hàng!");
     return;
   }
 
   if (!navigator.geolocation) {
-    alert("Trình duyệt của bạn không hỗ trợ lấy vị trí GPS!");
+    alert("Trình duyệt không hỗ trợ định vị GPS!");
     return;
   }
 
-  alert("Đang lấy vị trí GPS, vui lòng đợi...");
+  alert("Đang lấy tọa độ GPS, vui lòng đợi...");
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -34,7 +33,7 @@ function getLocation() {
         time: new Date().toLocaleString("vi-VN")
       };
 
-      // Gửi dữ liệu tới Apps Script
+      // Gửi dữ liệu bằng text/plain để tránh vướng CORS preflight
       fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -49,9 +48,9 @@ function getLocation() {
           alert("Lưu vị trí thành công!");
           document.getElementById("locName").value = "";
           document.getElementById("locNote").value = "";
-          fetchLocations(); // Tải lại danh sách
+          fetchLocations();
         } else {
-          alert("Lỗi từ server: " + res.message);
+          alert("Lỗi từ Google Sheet: " + res.message);
         }
       })
       .catch(err => {
@@ -60,9 +59,9 @@ function getLocation() {
       });
     },
     (error) => {
-      alert("Không thể lấy vị trí! Hãy đảm bảo bạn đã bật GPS và cho phép cấp quyền vị trí.");
+      alert("Không thể lấy vị trí GPS! Hãy kiểm tra quyền truy cập vị trí trên trình duyệt.");
     },
-    { enableHighAccuracy: true }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 
@@ -111,7 +110,7 @@ function renderList(list) {
   });
 }
 
-// 4. Tìm kiếm vị trí
+// 4. Tìm kiếm
 function filterLocations() {
   const keyword = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allLocations.filter(loc => 
@@ -122,9 +121,9 @@ function filterLocations() {
   renderList(filtered);
 }
 
-// 5. Xóa 1 mục
+// 5. Xóa 1 vị trí
 function deleteLocation(id) {
-  if (!confirm("Bạn có chắc chắn muốn xóa vị trí này?")) return;
+  if (!confirm("Xác nhận xóa vị trí này?")) return;
 
   fetch(API_URL, {
     method: "POST",
@@ -133,17 +132,13 @@ function deleteLocation(id) {
   })
   .then(res => res.json())
   .then(res => {
-    if (res.status === "success") {
-      fetchLocations();
-    } else {
-      alert("Xóa thất bại: " + res.message);
-    }
+    if (res.status === "success") fetchLocations();
   });
 }
 
 // 6. Sửa thông tin
 function editLocation(id, oldName, oldNote) {
-  const newName = prompt("Nhập tên/Mã khách hàng mới:", oldName);
+  const newName = prompt("Nhập mã/tên khách hàng mới:", oldName);
   if (newName === null) return;
   const newNote = prompt("Nhập ghi chú mới:", oldNote);
   if (newNote === null) return;
@@ -155,17 +150,13 @@ function editLocation(id, oldName, oldNote) {
   })
   .then(res => res.json())
   .then(res => {
-    if (res.status === "success") {
-      fetchLocations();
-    } else {
-      alert("Cập nhật thất bại: " + res.message);
-    }
+    if (res.status === "success") fetchLocations();
   });
 }
 
-// 7. Xóa toàn bộ lịch sử
+// 7. Xóa toàn bộ
 function clearLocations() {
-  if (!confirm("Cảnh báo: Bạn có chắc chắn muốn xóa toàn bộ danh sách?")) return;
+  if (!confirm("Bạn có chắc chắn muốn xóa tất cả?")) return;
 
   fetch(API_URL, {
     method: "POST",
@@ -174,10 +165,6 @@ function clearLocations() {
   })
   .then(res => res.json())
   .then(res => {
-    if (res.status === "success") {
-      fetchLocations();
-    } else {
-      alert("Xóa tất cả thất bại: " + res.message);
-    }
+    if (res.status === "success") fetchLocations();
   });
 }
