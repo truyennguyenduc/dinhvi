@@ -1,15 +1,18 @@
-// ID bảng tính lấy từ link của bác
 const SPREADSHEET_ID = "13dMMeQn-IS6y_yoI_LVj3paZAH-e3PmNH8Nj_AR4tts";
 const SHEET_NAME = "dinh_vi";
 
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return responseJSON({ status: "error", message: "Không tìm thấy dữ liệu POST" });
+    }
+
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
     
     if (!sheet) {
-      return responseJSON({ status: "error", message: "Không tìm thấy sheet có tên là " + SHEET_NAME });
+      return responseJSON({ status: "error", message: "Không tìm thấy sheet " + SHEET_NAME });
     }
 
     if (action === "ADD") {
@@ -35,8 +38,8 @@ function doPost(e) {
       const rows = sheet.getDataRange().getValues();
       for (let i = 1; i < rows.length; i++) {
         if (rows[i][0] == id) {
-          sheet.getRange(i + 1, 2).setValue(data.name); // Cột B (name)
-          sheet.getRange(i + 1, 3).setValue(data.note); // Cột C (note)
+          sheet.getRange(i + 1, 2).setValue(data.name);
+          sheet.getRange(i + 1, 3).setValue(data.note);
           return responseJSON({ status: "success", message: "Đã cập nhật vị trí" });
         }
       }
@@ -59,15 +62,13 @@ function doPost(e) {
 function doGet(e) {
   try {
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
-    
     if (!sheet) {
-      return responseJSON({ status: "error", message: "Không tìm thấy sheet có tên là " + SHEET_NAME });
+      return responseJSON({ status: "error", message: "Không tìm thấy sheet " + SHEET_NAME });
     }
 
     const rows = sheet.getDataRange().getValues();
     const locations = [];
     
-    // Bỏ qua hàng 1 (Header/Tiêu đề)
     for (let i = 1; i < rows.length; i++) {
       locations.push({
         id: Number(rows[i][0]),
@@ -79,7 +80,6 @@ function doGet(e) {
       });
     }
     
-    // Trả về danh sách sắp xếp mới nhất lên đầu
     locations.reverse();
     return responseJSON({ status: "success", data: locations });
   } catch (err) {
