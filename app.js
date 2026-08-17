@@ -2,6 +2,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE
 
 let allLocations = [];
 let deleteTargetId = null;
+let editTargetId = null;
 
 document.addEventListener("DOMContentLoaded", fetchLocations);
 
@@ -137,7 +138,7 @@ function renderList(locations) {
       <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
       
       <div class="action-bar">
-        <button class="btn-edit" onclick="editLocation(${loc.id})">Sửa</button>
+        <button class="btn-edit" onclick="openEditModal(${loc.id})">Sửa</button>
         <button class="btn-delete" onclick="openConfirmModal(${loc.id})">Xóa</button>
       </div>
     `;
@@ -157,7 +158,7 @@ function filterLocations() {
   renderList(filtered);
 }
 
-// 5. Mở Popup Modal xác nhận Xóa
+// 5. Mở/Đóng Modal Xóa
 function openConfirmModal(id) {
   deleteTargetId = id;
   const modal = document.getElementById("confirmModal");
@@ -171,14 +172,12 @@ function openConfirmModal(id) {
   }
 }
 
-// 6. Đóng Modal
 function closeConfirmModal() {
   deleteTargetId = null;
   const modal = document.getElementById("confirmModal");
   if (modal) modal.style.display = "none";
 }
 
-// 7. Thực thi Xóa
 function executeDelete() {
   if (!deleteTargetId) return;
 
@@ -196,19 +195,48 @@ function executeDelete() {
   });
 }
 
-// 8. Sửa vị trí
-function editLocation(id) {
+// 6. Mở/Đóng Modal Sửa
+function openEditModal(id) {
   const loc = allLocations.find(item => item.id === id);
   if (!loc) return;
 
-  const newName = prompt("Sửa Mã khách hàng:", loc.name);
-  if (newName === null) return;
-  const newNote = prompt("Sửa Ghi chú:", loc.note);
-  if (newNote === null) return;
+  editTargetId = id;
+  document.getElementById("editNameInput").value = loc.name;
+  document.getElementById("editNoteInput").value = loc.note || "";
 
-  loc.name = newName.trim().toUpperCase();
-  loc.note = newNote.trim();
+  const modal = document.getElementById("editModal");
+  if (modal) modal.style.display = "flex";
+}
 
+function closeEditModal() {
+  editTargetId = null;
+  const modal = document.getElementById("editModal");
+  if (modal) modal.style.display = "none";
+}
+
+function saveEditLocation() {
+  if (!editTargetId) return;
+
+  const newName = document.getElementById("editNameInput").value.trim().toUpperCase();
+  const newNote = document.getElementById("editNoteInput").value.trim();
+
+  if (!newName) {
+    showToast("Mã khách hàng không được để trống!");
+    return;
+  }
+
+  if (newName.length !== 13) {
+    showToast(`Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${newName.length} ký tự)`);
+    return;
+  }
+
+  const loc = allLocations.find(item => item.id === editTargetId);
+  if (loc) {
+    loc.name = newName;
+    loc.note = newNote;
+  }
+
+  closeEditModal();
   renderList(allLocations);
   showToast("Đã cập nhật vị trí!");
 
@@ -217,14 +245,14 @@ function editLocation(id) {
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
       action: "EDIT",
-      id: id,
-      name: loc.name,
-      note: loc.note
+      id: editTargetId,
+      name: newName,
+      note: newNote
     })
   });
 }
 
-// 9. Toast thông báo
+// 7. Toast thông báo
 function showToast(message) {
   const container = document.getElementById("toast-container");
   if (!container) return;
