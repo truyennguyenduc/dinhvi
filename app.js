@@ -34,14 +34,14 @@ function getLocation() {
       };
 
       // Gửi dữ liệu bằng text/plain để tránh vướng CORS preflight
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "ADD",
-          location: locData
-        })
-      })
+fetch(API_URL, {
+  method: "POST",
+  headers: { "Content-Type": "text/plain;charset=utf-8" }, // Bắt buộc dùng text/plain
+  body: JSON.stringify({
+    action: "ADD",
+    location: locData
+  })
+})
       .then(res => res.json())
       .then(res => {
         if (res.status === "success") {
