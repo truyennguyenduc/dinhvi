@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
+const API_URL = "https://script.google.com/macros/library/d/1Ss5G9j8pAsGVdguppLMQlXWUELpwlM7BXUJiXgf9QKSQLcpXwe-xhVQZ/15";
 
 // Cấu hình mật khẩu xác thực khi sửa / xóa
 const SECRET_PASSWORD = "Truyen&1978";
