@@ -7,12 +7,16 @@ document.addEventListener("DOMContentLoaded", fetchLocations);
 
 // 1. Lấy vị trí GPS và gửi lên Apps Script
 // 1. Lấy vị trí GPS và cập nhật giao diện TỨC THÌ
+// 1. Lấy vị trí GPS và lưu
 function getLocation() {
-  const nameInput = document.getElementById("locName").value.trim();
+  const locNameInput = document.getElementById("locName");
+  const nameInput = locNameInput.value.trim().toUpperCase(); // Tự động đổi thành CHỮ IN HOA
   const noteInput = document.getElementById("locNote").value.trim();
 
+  // BẮT BUỘC NHẬP MÃ KHÁCH HÀNG
   if (!nameInput) {
-    alert("Vui lòng nhập Mã khách hàng!");
+    alert("Cảnh báo: Bạn phải nhập Mã khách hàng trước khi lấy vị trí!");
+    locNameInput.focus(); // Tự động đưa con trỏ chuột vào ô nhập Mã KH
     return;
   }
 
@@ -32,12 +36,12 @@ function getLocation() {
         time: new Date().toLocaleString("vi-VN")
       };
 
-      // TỐI ƯU: Thêm ngay vào danh sách hiển thị trên màn hình (không cần chờ server)
+      // Hiện ngay lập tức lên danh sách màn hình (không phải chờ lưu xong)
       allLocations.unshift(locData);
       renderList(allLocations);
 
-      // Reset ô nhập liệu ngay lập tức
-      document.getElementById("locName").value = "";
+      // Xóa trắng ô nhập liệu sau khi lấy thành công
+      locNameInput.value = "";
       document.getElementById("locNote").value = "";
 
       // Gửi ngầm dữ liệu lên Google Sheet ở nền
@@ -52,7 +56,7 @@ function getLocation() {
       .then(res => res.json())
       .then(res => {
         if (res.status !== "success") {
-          alert("Lỗi lưu ngầm lên Google Sheet: " + res.message);
+          alert("Lỗi lưu dữ liệu lên Google Sheet: " + res.message);
         }
       })
       .catch(err => {
@@ -60,7 +64,7 @@ function getLocation() {
       });
     },
     (error) => {
-      alert("Không thể lấy vị trí GPS! Hãy kiểm tra quyền vị trí trên điện thoại.");
+      alert("Không thể lấy vị trí GPS! Hãy kiểm tra xem bạn đã bật GPS và cấp quyền vị trí cho trình duyệt chưa.");
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
