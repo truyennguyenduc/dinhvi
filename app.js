@@ -154,18 +154,3 @@ function editLocation(id, oldName, oldNote) {
     if (res.status === "success") fetchLocations();
   });
 }
-
-// 7. Xóa toàn bộ
-function clearLocations() {
-  if (!confirm("Bạn có chắc chắn muốn xóa tất cả?")) return;
-
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "CLEAR" })
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "success") fetchLocations();
-  });
-}
