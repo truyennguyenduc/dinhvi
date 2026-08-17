@@ -54,7 +54,7 @@ function getLocation() {
   // --- KIỂM TRA TỒN TẠI MÃ KHÁCH HÀNG ---
   const existingLoc = allLocations.find(item => item.name === nameInput);
   if (existingLoc) {
-    showToast(`Mã KH "${nameInput}" đã tồn tại! Đã tìm vị trí cũ để bạn sửa.`, true);
+    showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
     
     // Tự động điền vào ô tìm kiếm và lọc ra vị trí đó ngay lập tức
     const searchInput = document.getElementById("searchInput");
