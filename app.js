@@ -23,36 +23,50 @@ function fetchLocations() {
         allLocations = res.data || [];
         renderList(allLocations);
       } else {
-        showToast("Lỗi tải danh sách: " + res.message);
+        showToast("Lỗi tải danh sách: " + res.message, true);
       }
     })
     .catch(err => {
       console.error("Lỗi tải danh sách:", err);
       if (loadingBox) loadingBox.style.display = "none";
-      showToast("Không thể kết nối tới Google Sheet!");
+      showToast("Không thể kết nối tới Google Sheet!", true);
     });
 }
 
-// 2. Lấy vị trí GPS
+// 2. Lấy vị trí GPS (Kiểm tra trùng Mã KH)
 function getLocation() {
   const locNameInput = document.getElementById("locName");
   const nameInput = locNameInput.value.trim().toUpperCase();
   const noteInput = document.getElementById("locNote").value.trim();
 
   if (!nameInput) {
-    showToast("Cảnh báo: Bạn phải nhập Mã khách hàng trước khi lấy vị trí!");
+    showToast("Cảnh báo: Bạn phải nhập Mã khách hàng trước khi lấy vị trí!", true);
     locNameInput.focus();
     return;
   }
 
   if (nameInput.length !== 13) {
-    showToast(`Cảnh báo: Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${nameInput.length} ký tự)`);
+    showToast(`Cảnh báo: Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${nameInput.length} ký tự)`, true);
     locNameInput.focus();
     return;
   }
 
+  // --- KIỂM TRA TỒN TẠI MÃ KHÁCH HÀNG ---
+  const existingLoc = allLocations.find(item => item.name === nameInput);
+  if (existingLoc) {
+    showToast(`Mã KH "${nameInput}" đã tồn tại! Đã tìm vị trí cũ để bạn sửa.`, true);
+    
+    // Tự động điền vào ô tìm kiếm và lọc ra vị trí đó ngay lập tức
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) {
+      searchInput.value = nameInput;
+      filterLocations();
+    }
+    return; // Ngắt lệnh, không thêm trùng
+  }
+
   if (!navigator.geolocation) {
-    showToast("Trình duyệt không hỗ trợ định vị GPS!");
+    showToast("Trình duyệt không hỗ trợ định vị GPS!", true);
     return;
   }
 
@@ -70,7 +84,7 @@ function getLocation() {
       allLocations.unshift(locData);
       renderList(allLocations);
 
-      locNameInput.value = "";
+      locNameInput.value = "PB060600";
       document.getElementById("locNote").value = "";
 
       showToast("Đã lấy vị trí thành công!");
@@ -86,16 +100,16 @@ function getLocation() {
       .then(res => res.json())
       .then(res => {
         if (res.status !== "success") {
-          showToast("Lỗi lưu lên Google Sheet: " + res.message);
+          showToast("Lỗi lưu lên Google Sheet: " + res.message, true);
         }
       })
       .catch(err => {
         console.error(err);
-        showToast("Lỗi kết nối khi gửi dữ liệu ngầm!");
+        showToast("Lỗi kết nối khi gửi dữ liệu ngầm!", true);
       });
     },
     (error) => {
-      showToast("Không thể lấy vị trí GPS! Hãy kiểm tra quyền vị trí trên điện thoại.");
+      showToast("Không thể lấy vị trí GPS! Hãy kiểm tra quyền vị trí trên điện thoại.", true);
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
@@ -221,12 +235,19 @@ function saveEditLocation() {
   const newNote = document.getElementById("editNoteInput").value.trim();
 
   if (!newName) {
-    showToast("Mã khách hàng không được để trống!");
+    showToast("Mã khách hàng không được để trống!", true);
     return;
   }
 
   if (newName.length !== 13) {
-    showToast(`Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${newName.length} ký tự)`);
+    showToast(`Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${newName.length} ký tự)`, true);
+    return;
+  }
+
+  // Kiểm tra nếu chỉnh sửa mã mà bị trùng với một Mã KH khác đã lưu
+  const duplicate = allLocations.find(item => item.name === newName && item.id !== editTargetId);
+  if (duplicate) {
+    showToast(`Mã KH "${newName}" đã thuộc về bản ghi khác!`, true);
     return;
   }
 
@@ -252,13 +273,13 @@ function saveEditLocation() {
   });
 }
 
-// 7. Toast thông báo
-function showToast(message) {
+// 7. Toast thông báo (isWarning = true sẽ đổi sang màu đỏ)
+function showToast(message, isWarning = false) {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
   const toast = document.createElement("div");
-  toast.className = "toast";
+  toast.className = isWarning ? "toast warning" : "toast";
   toast.innerText = message;
 
   container.appendChild(toast);
