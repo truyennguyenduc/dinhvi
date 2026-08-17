@@ -33,7 +33,6 @@
 
         .form-group { margin-bottom: 5px; }
 
-        /* KHUNG CHỨA LOGO TRON VÀ 2 DÒNG CHỮ */
         .header-logo-container {
             display: flex;
             align-items: center;
@@ -46,7 +45,6 @@
             height: 44px;
             object-fit: contain;
             flex-shrink: 0;
-            /* Lọc bỏ hoàn toàn các pixel màu trắng xung quanh logo */
             mix-blend-mode: multiply;
         }
 
@@ -73,7 +71,7 @@
 
         label { display: block; font-weight: bold; margin-bottom: 4px; color: #444; font-size: 14px; }
         
-        input[type="text"], textarea { 
+        input[type="text"], input[type="password"], textarea { 
             width: 100%; 
             padding: 10px 12px; 
             border: 1px solid #ccc; 
@@ -146,7 +144,6 @@
         
         li.selected .action-bar { display: flex; }
 
-        /* TOAST NOTIFICATION */
         #toast-container {
             position: fixed;
             top: 15px;
@@ -181,7 +178,6 @@
             transform: translateX(0);
         }
 
-        /* SPINNER WAITING */
         .loading-box {
             display: none;
             flex-direction: column;
@@ -208,7 +204,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* MODAL KHUNG CHUNG */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -248,7 +243,7 @@
         .modal-message {
             font-size: 15px;
             color: #444;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .modal-buttons {
@@ -274,7 +269,6 @@
     <div class="app-container">
         <div class="fixed-header">
             <div class="form-group">
-                <!-- Nối LOGO.png bên trái 2 dòng chữ -->
                 <div class="header-logo-container">
                     <img src="LOGO.png" alt="CMIS Logo" class="main-logo">
                     <div class="header-text-group">
@@ -314,11 +308,17 @@
     <!-- Modal Xóa -->
     <div id="confirmModal" class="modal-overlay">
         <div class="modal-box">
-            <div class="modal-title">Thông báo</div>
+            <div class="modal-title" style="color: #dc3545;">Xác nhận xóa</div>
             <div class="modal-message">Bạn có chắc chắn muốn xóa khách hàng này?</div>
+            
+            <div class="form-group" style="text-align: left;">
+                <label for="deletePasswordInput">Mật khẩu xác nhận:</label>
+                <input type="password" id="deletePasswordInput" placeholder="Nhập mật khẩu...">
+            </div>
+
             <div class="modal-buttons">
                 <button class="btn-modal-cancel" onclick="closeConfirmModal()">Hủy</button>
-                <button class="btn-modal-confirm" id="btnConfirmDelete">Đồng ý</button>
+                <button class="btn-modal-confirm" id="btnConfirmDelete" style="background: #dc3545;">Xóa</button>
             </div>
         </div>
     </div>
@@ -336,6 +336,11 @@
             <div class="form-group">
                 <label for="editNoteInput">Ghi chú:</label>
                 <textarea id="editNoteInput"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="editPasswordInput">Mật khẩu xác nhận:</label>
+                <input type="password" id="editPasswordInput" placeholder="Nhập mật khẩu...">
             </div>
 
             <div class="modal-buttons">
