@@ -33,6 +33,21 @@
 
         .form-group { margin-bottom: 5px; }
 
+        /* Khối hiển thị 2 combobox nằm ngang tỷ lệ 40/60 */
+        .form-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+        .col-40 {
+            flex: 0 0 calc(40% - 4px);
+            max-width: calc(40% - 4px);
+        }
+        .col-60 {
+            flex: 0 0 calc(60% - 4px);
+            max-width: calc(60% - 4px);
+        }
+
         .header-logo-container {
             display: flex;
             align-items: center;
@@ -67,12 +82,6 @@
             color: #4682B4;
             font-style: italic;
             margin-bottom: 2px;
-        }
-        .customer-code-label {
-            font-size: 14px;
-            font-weight: bold;
-            color: #444;
-            line-height: 1.2;
         }
 
         label { display: block; font-weight: bold; margin-bottom: 4px; color: #444; font-size: 14px; }
@@ -133,6 +142,7 @@
         
         .loc-name { font-size: 16px; font-weight: bold; color: #111; margin-bottom: 4px; }
         .loc-employee { font-size: 13px; font-weight: bold; color: #007bff; margin-bottom: 4px; }
+        .loc-job { font-size: 13px; font-weight: bold; color: #d9534f; margin-bottom: 4px; }
         .loc-note { font-size: 13px; color: #555; margin-bottom: 6px; font-style: italic; }
         .time { font-size: 12px; color: #777; display: block; margin-bottom: 6px; }
         .coords { font-size: 14px; margin-bottom: 6px; color: #222; }
@@ -176,14 +186,8 @@
             word-wrap: break-word;
         }
 
-        .toast.warning {
-            background-color: #dc3545;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        .toast.warning { background-color: #dc3545; }
+        .toast.show { opacity: 1; transform: translateX(0); }
 
         .loading-box {
             display: none;
@@ -247,26 +251,9 @@
             margin-bottom: 12px;
         }
 
-        .modal-message {
-            font-size: 15px;
-            color: #444;
-            margin-bottom: 12px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 12px;
-        }
-
-        .modal-buttons button {
-            flex: 1;
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 6px;
-            margin: 0;
-        }
-
+        .modal-message { font-size: 15px; color: #444; margin-bottom: 12px; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 12px; }
+        .modal-buttons button { flex: 1; padding: 10px; font-size: 14px; border-radius: 6px; margin: 0; }
         .btn-modal-cancel { background: #e0e0e0; color: #333; }
         .btn-modal-confirm { background: #28a745; color: white; }
     </style>
@@ -286,16 +273,22 @@
                 <input type="text" id="locName" style="text-transform: uppercase;" value="PB060600">
             </div>
 
-
-
             <div class="form-group">
                 <textarea id="locNote" placeholder="Nhập ghi chú thêm nếu có..."></textarea>
             </div>
             
-            <div class="form-group">
-                <select id="employeeSelect" onchange="onEmployeeChange()">
-                    <option value="">-- Đang tải danh sách nhân viên... --</option>
-                </select>
+            <!-- Hàng chứa Combobox Công việc (40%) và Nhân viên (60%) -->
+            <div class="form-group form-row">
+                <div class="col-40">
+                    <select id="jobSelect" onchange="onJobChange()">
+                        <option value="">-- Đang tải CV... --</option>
+                    </select>
+                </div>
+                <div class="col-60">
+                    <select id="employeeSelect" onchange="onEmployeeChange()">
+                        <option value="">-- Đang tải nhân viên... --</option>
+                    </select>
+                </div>
             </div>
             
             <button class="btn-get" onclick="getLocation()">Lấy tọa độ vị trí treo công tơ</button>
@@ -303,7 +296,7 @@
             <div class="list-title">Danh sách vị trí công tơ: <span id="locationCount" style="color: #007bff;">(0)</span></div>
 
             <div class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Nhập gần đúng MKH, nhân viên, ghi chú, tọa độ..." oninput="filterLocations()">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Nhập gần đúng MKH, nhân viên, công việc, ghi chú..." oninput="filterLocations()">
             </div>
         </div>
 
@@ -348,11 +341,19 @@
                 <input type="text" id="editNameInput" style="text-transform: uppercase;">
             </div>
 
-            <div class="form-group">
-                <label for="editEmployeeSelect">Nhân viên thực hiện:</label>
-                <select id="editEmployeeSelect">
-                    <option value="">-- Chọn nhân viên --</option>
-                </select>
+            <div class="form-group form-row">
+                <div class="col-40">
+                    <label for="editJobSelect">Công việc:</label>
+                    <select id="editJobSelect">
+                        <option value="">-- Chọn CV --</option>
+                    </select>
+                </div>
+                <div class="col-60">
+                    <label for="editEmployeeSelect">Nhân viên:</label>
+                    <select id="editEmployeeSelect">
+                        <option value="">-- Chọn NV --</option>
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
