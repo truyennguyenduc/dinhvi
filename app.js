@@ -1,153 +1,83 @@
-// Mật khẩu quản trị để xóa vị trí (Bác có thể đổi mật khẩu tại đây)
-const ADMIN_PASSWORD = "Truyen&1978"; 
+const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const SHEET_NAME = "Sheet1";
 
-document.addEventListener("DOMContentLoaded", displayLocations);
-
-function getLocation() {
-    const nameInput = document.getElementById("locName");
-    const noteInput = document.getElementById("locNote");
-
-    const name = nameInput.value.trim() || "Vị trí không tên";
-    const note = noteInput.value.trim();
-
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                const time = new Date().toLocaleString("vi-VN");
-
-                const newLocation = { id: Date.now(), name, note, lat, lng, time };
-                
-                let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-                locations.unshift(newLocation);
-                localStorage.setItem("user_locations", JSON.stringify(locations));
-
-                nameInput.value = "";
-                noteInput.value = "";
-
-                displayLocations();
-            },
-            (error) => {
-                alert("Không thể lấy vị trí. Vui lòng bật GPS và cho phép ứng dụng truy cập.");
-            },
-            { enableHighAccuracy: true }
-        );
-    } else {
-        alert("Trình duyệt không hỗ trợ Geolocation.");
-    }
-}
-
-function displayLocations() {
-    const listElement = document.getElementById("locationList");
-    const searchInput = document.getElementById("searchInput");
-    const keyword = searchInput ? searchInput.value.toLowerCase().trim() : "";
-    listElement.innerHTML = "";
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
     
-    let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-
-    let filteredLocations = locations.filter(loc => {
-        const nameMatch = loc.name.toLowerCase().includes(keyword);
-        const noteMatch = (loc.note || "").toLowerCase().includes(keyword);
-        const coordsMatch = `${loc.lat},${loc.lng}`.includes(keyword);
-        return nameMatch || noteMatch || coordsMatch;
-    });
-
-    if (filteredLocations.length === 0) {
-        listElement.innerHTML = "<li style='text-align: center; color: #777;'>Không tìm thấy vị trí nào.</li>";
-        return;
+    if (action === "ADD") {
+      const loc = data.location;
+      sheet.appendRow([loc.id, loc.name, loc.note, loc.lat, loc.lng, loc.time]);
+      return responseJSON({ status: "success", message: "Đã thêm vị trí" });
+    }
+    
+    if (action === "DELETE") {
+      const id = data.id;
+      const rows = sheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] == id) {
+          sheet.deleteRow(i + 1);
+          return responseJSON({ status: "success", message: "Đã xóa vị trí" });
+        }
+      }
+      return responseJSON({ status: "error", message: "Không tìm thấy ID" });
     }
 
-    filteredLocations.forEach((loc) => {
-        const li = document.createElement("li");
-        const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
-
-        li.onclick = function(e) {
-            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
-            document.querySelectorAll('#locationList li').forEach(item => {
-                if (item !== li) item.classList.remove('selected');
-            });
-            li.classList.toggle('selected');
-        };
-
-        let noteHtml = loc.note ? `<div class="loc-note">Ghi chú: ${escapeHtml(loc.note)}</div>` : "";
-
-        li.innerHTML = `
-            <div class="loc-name">📍 ${escapeHtml(loc.name)}</div>
-            ${noteHtml}
-            <span class="time">Thời gian: ${loc.time}</span>
-            <div class="coords">Tọa độ: <b>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</b></div>
-            <a class="maps-link" href="${mapsUrl}" target="_blank">Mở trên Google Maps ➔</a>
-            
-            <div class="action-bar">
-                <button class="btn-edit" onclick="editLocation(${loc.id})">✏️ Sửa vị trí</button>
-                <button class="btn-delete" onclick="deleteLocation(${loc.id})">🗑️ Xóa vị trí</button>
-            </div>
-        `;
-        listElement.appendChild(li);
-    });
-}
-
-function filterLocations() {
-    displayLocations();
-}
-
-// Xóa 1 vị trí (Cần mật khẩu)
-function deleteLocation(id) {
-    const password = prompt("Nhập mật khẩu quản trị để xóa vị trí này:");
-    if (password === null) return;
-
-    if (password === ADMIN_PASSWORD) {
-        let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-        locations = locations.filter(loc => loc.id !== id);
-        localStorage.setItem("user_locations", JSON.stringify(locations));
-        displayLocations();
-        alert("Đã xóa vị trí thành công.");
-    } else {
-        alert("Sai mật khẩu quản trị!");
+    if (action === "EDIT") {
+      const id = data.id;
+      const rows = sheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] == id) {
+          sheet.getRange(i + 1, 2).setValue(data.name); // Cột B (name)
+          sheet.getRange(i + 1, 3).setValue(data.note); // Cột C (note)
+          return responseJSON({ status: "success", message: "Đã cập nhật vị trí" });
+        }
+      }
+      return responseJSON({ status: "error", message: "Không tìm thấy ID" });
     }
-}
 
-// Sửa vị trí (Không cần mật khẩu)
-function editLocation(id) {
-    let locations = JSON.parse(localStorage.getItem("user_locations")) || [];
-    const index = locations.findIndex(loc => loc.id === id);
-    if (index === -1) return;
-
-    const item = locations[index];
-
-    const newName = prompt("Nhập tên vị trí mới:", item.name);
-    if (newName === null) return;
-
-    const newNote = prompt("Nhập ghi chú mới:", item.note || "");
-    if (newNote === null) return;
-
-    locations[index].name = newName.trim() || "Vị trí không tên";
-    locations[index].note = newNote.trim();
-
-    localStorage.setItem("user_locations", JSON.stringify(locations));
-    displayLocations();
-}
-
-// Xóa toàn bộ lịch sử (Nút bấm phía trên - Cần mật khẩu)
-function clearLocations() {
-    const password = prompt("Nhập mật khẩu quản trị để XÓA TOÀN BỘ lịch sử:");
-    if (password === null) return;
-
-    if (password === ADMIN_PASSWORD) {
-        localStorage.removeItem("user_locations");
-        displayLocations();
-        alert("Đã xóa toàn bộ lịch sử.");
-    } else {
-        alert("Sai mật khẩu quản trị!");
+    if (action === "CLEAR") {
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+      }
+      return responseJSON({ status: "success", message: "Đã xóa toàn bộ lịch sử" });
     }
+
+  } catch (err) {
+    return responseJSON({ status: "error", message: err.toString() });
+  }
 }
 
-function escapeHtml(text) {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+function doGet(e) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+    const rows = sheet.getDataRange().getValues();
+    const locations = [];
+    
+    // Bỏ qua hàng 1 (Header)
+    for (let i = 1; i < rows.length; i++) {
+      locations.push({
+        id: Number(rows[i][0]),
+        name: String(rows[i][1]),
+        note: String(rows[i][2]),
+        lat: Number(rows[i][3]),
+        lng: Number(rows[i][4]),
+        time: String(rows[i][5])
+      });
+    }
+    
+    // Trả về danh sách sắp xếp mới nhất lên đầu
+    locations.reverse();
+    return responseJSON({ status: "success", data: locations });
+  } catch (err) {
+    return responseJSON({ status: "error", message: err.toString() });
+  }
+}
+
+function responseJSON(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
