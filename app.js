@@ -16,12 +16,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // 0. Tải danh sách nhân viên từ Apps Script
+// 0. Tải danh sách nhân viên từ Apps Script
 function fetchEmployees() {
   fetch(`${API_URL}?action=getEmployees`)
     .then(res => res.json())
     .then(res => {
       if (res.status === "success" && Array.isArray(res.data)) {
-        employeesList = res.data;
+        // Chuẩn hóa dữ liệu mảng thành dạng chuỗi an toàn
+        employeesList = res.data.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            return item.ten_nvien || item.name || Object.values(item)[0] || "";
+          }
+          return item;
+        });
       } else {
         employeesList = [];
       }
@@ -29,6 +36,7 @@ function fetchEmployees() {
     })
     .catch(err => {
       console.error("Lỗi tải danh sách nhân viên:", err);
+      employeesList = [];
       populateEmployeeDropdowns();
     });
 }
@@ -39,7 +47,10 @@ function populateEmployeeDropdowns() {
 
   let optionsHTML = '<option value="">-- Chọn NV --</option>';
   employeesList.forEach(emp => {
-    optionsHTML += `<option value="${emp}">${emp}</option>`;
+    let empText = (typeof emp === 'object' && emp !== null) ? (emp.ten_nvien || Object.values(emp)[0]) : emp;
+    if (empText) {
+      optionsHTML += `<option value="${empText}">${empText}</option>`;
+    }
   });
 
   if (selectMain) selectMain.innerHTML = optionsHTML;
