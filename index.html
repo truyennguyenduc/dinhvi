@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ghi nhớ vị trí công tơ của khách hàng</title>
     <style>
-        /* Thiết lập chiều cao tràn màn hình và ẩn cuộn toàn trang */
         html, body {
             height: 100%;
             margin: 0;
@@ -13,10 +12,9 @@
             font-family: Arial, sans-serif;
             background: #f4f4f9;
             color: #333;
-            overflow: hidden; /* Cố định toàn màn hình */
+            overflow: hidden;
         }
 
-        /* Container chính sử dụng Flexbox bố trí theo chiều dọc */
         .app-container {
             display: flex;
             flex-direction: column;
@@ -27,9 +25,8 @@
             padding: 12px;
         }
 
-        /* Khung chứa các ô nhập liệu & nút bấm - CỐ ĐỊNH PHÍA TRÊN */
         .fixed-header {
-            flex-shrink: 0; /* Không co lại khi danh sách dài */
+            flex-shrink: 0;
             background: #f4f4f9;
             padding-bottom: 8px;
         }
@@ -70,12 +67,11 @@
             font-weight: bold;
         }
 
-        /* Khung chứa danh sách - TỰ ĐỘNG GIÃN VÀ TRƯỢT KHI DÀI */
         .scrollable-content {
-            flex: 1; /* Chiếm toàn bộ khoảng trống còn lại */
-            overflow-y: auto; /* Cho phép cuộn dọc */
-            -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iPhone/Safari */
-            padding-right: 2px; /* Tránh đè thanh cuộn */
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 2px;
         }
 
         ul { list-style-type: none; padding: 0; margin: 0; }
@@ -97,7 +93,6 @@
         .coords { font-size: 14px; margin-bottom: 6px; color: #222; }
         .maps-link { display: inline-block; color: #0056b3; text-decoration: underline; font-weight: bold; font-size: 14px; }
         
-        /* Khung chứa nút Sửa / Xóa khi click vào dòng */
         .action-bar { 
             display: none; 
             margin-top: 10px; 
@@ -110,12 +105,42 @@
         .btn-delete { background: #dc3545; color: #fff; }
         
         li.selected .action-bar { display: flex; }
+
+        /* --- CSS BẢNG THÔNG BÁO TOAST GÓC PHẢI MÀN HÌNH --- */
+        #toast-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 320px;
+        }
+
+        .toast {
+            background-color: #28a745; /* Nền xanh lá cây */
+            color: #ffffff;            /* Chữ màu trắng */
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- PHẦN CỐ ĐỊNH TRÊN CÙNG -->
         <div class="fixed-header">
             <div class="form-group">
                 <label for="locName">Mã khách hàng:</label>
@@ -136,11 +161,13 @@
             </div>
         </div>
 
-        <!-- PHẦN DANH SÁCH CUỘN TRƯỢT -->
         <div class="scrollable-content">
             <ul id="locationList"></ul>
         </div>
     </div>
+
+    <!-- Khung chứa thông báo Toast -->
+    <div id="toast-container"></div>
 
     <script src="app.js"></script>
 </body>
