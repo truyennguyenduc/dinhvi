@@ -121,7 +121,7 @@ function getLocation() {
           showToast("Lỗi: Bạn đã từ chối quyền vị trí! Hãy cấp quyền GPS cho trình duyệt.", true);
           break;
         case error.POSITION_UNAVAILABLE:
-          showToast("Lỗi: Bắt buộc phải MỞ ĐỊNH VỊ (GPS) trên điện thoại mới có thể lưu!", true);
+          showToast("Lỗi: Bắt buộc phải Mở ĐỊNH VỊ (GPS) trên điện thoại mới có thể lưu!", true);
           break;
         case error.TIMEOUT:
           showToast("Lỗi: Quá thời gian lấy vị trí! Hãy bật GPS và thử lại.", true);
@@ -288,26 +288,92 @@ function saveEditLocation() {
     return;
   }
 
-  const loc = allLocations.find(item => item.id === editTargetId);
-  if (loc) {
-    loc.name = newName;
-    loc.note = newNote;
+  // Hỏi người dùng có muốn cập nhật tọa độ GPS mới không
+  const updateLocation = confirm("Bạn có muốn lấy và cập nhật tọa độ GPS MỚI không?\n\n- Bấm 'OK' để cập nhật tọa độ GPS mới.\n- Bấm 'Hủy' (Cancel) để GIỮ TỌA ĐỘ CŨ.");
+
+  if (updateLocation) {
+    // Trường hợp cập nhật cả tọa độ GPS mới
+    if (!navigator.geolocation) {
+      showToast("Thiết bị không hỗ trợ GPS để cập nhật vị trí!", true);
+      return;
+    }
+
+    showToast("Đang truy xuất tọa độ GPS mới...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLat = position.coords.latitude;
+        const newLng = position.coords.longitude;
+        const newTime = new Date().toLocaleString("vi-VN");
+
+        const loc = allLocations.find(item => item.id === editTargetId);
+        if (loc) {
+          loc.name = newName;
+          loc.note = newNote;
+          loc.lat = newLat;
+          loc.lng = newLng;
+          loc.time = newTime;
+        }
+
+        closeEditModal();
+        renderList(allLocations);
+        showToast("Đã cập nhật thông tin và tọa độ GPS mới!");
+
+        fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "EDIT",
+            id: editTargetId,
+            name: newName,
+            note: newNote,
+            lat: newLat,
+            lng: newLng,
+            time: newTime
+          })
+        });
+      },
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            showToast("Lỗi: Đã từ chối quyền vị trí!", true);
+            break;
+          case error.POSITION_UNAVAILABLE:
+            showToast("Lỗi: Bắt buộc phải MỞ ĐỊNH VỊ (GPS) để lấy tọa độ mới!", true);
+            break;
+          case error.TIMEOUT:
+            showToast("Lỗi: Quá thời gian lấy vị trí GPS!", true);
+            break;
+          default:
+            showToast("Lỗi: Không thể lấy tọa độ vị trí mới!", true);
+            break;
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  } else {
+    // Trường hợp giữ tọa độ cũ (Chỉ cập nhật mã KH và Ghi chú)
+    const loc = allLocations.find(item => item.id === editTargetId);
+    if (loc) {
+      loc.name = newName;
+      loc.note = newNote;
+    }
+
+    closeEditModal();
+    renderList(allLocations);
+    showToast("Đã cập nhật thông tin (Giữ nguyên tọa độ cũ)!");
+
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "EDIT",
+        id: editTargetId,
+        name: newName,
+        note: newNote
+      })
+    });
   }
-
-  closeEditModal();
-  renderList(allLocations);
-  showToast("Đã cập nhật vị trí!");
-
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      action: "EDIT",
-      id: editTargetId,
-      name: newName,
-      note: newNote
-    })
-  });
 }
 
 // 7. Toast thông báo
