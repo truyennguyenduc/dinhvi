@@ -16,13 +16,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // 0. Tải danh sách nhân viên từ Apps Script
-// 0. Tải danh sách nhân viên từ Apps Script
 function fetchEmployees() {
   fetch(`${API_URL}?action=getEmployees`)
     .then(res => res.json())
     .then(res => {
       if (res.status === "success" && Array.isArray(res.data)) {
-        // Chuẩn hóa dữ liệu mảng thành dạng chuỗi an toàn
         employeesList = res.data.map(item => {
           if (typeof item === 'object' && item !== null) {
             return item.ten_nvien || item.name || Object.values(item)[0] || "";
@@ -56,7 +54,6 @@ function populateEmployeeDropdowns() {
   if (selectMain) selectMain.innerHTML = optionsHTML;
   if (selectEdit) selectEdit.innerHTML = optionsHTML;
 
-  // Lấy nhân viên đã ghi nhớ từ localStorage
   const savedEmployee = localStorage.getItem("selected_employee");
   if (savedEmployee && selectMain) {
     selectMain.value = savedEmployee;
@@ -71,16 +68,13 @@ function onEmployeeChange() {
 }
 
 // 0.1 Tải danh sách công việc từ Apps Script
-// 0.1 Tải danh sách công việc từ Apps Script
 function fetchJobs() {
   fetch(`${API_URL}?action=getJobs`)
     .then(res => res.json())
     .then(res => {
       if (res.status === "success" && Array.isArray(res.data)) {
-        // Xử lý nếu res.data trả về mảng chứa Object hoặc mảng mảng
         jobsList = res.data.map(item => {
           if (typeof item === 'object' && item !== null) {
-            // Nếu là Object, lấy giá trị của thuộc tính đầu tiên hoặc tên cột tương ứng
             return item.ten_cviec || item.ma_khang || Object.values(item)[0] || "";
           }
           return item;
@@ -103,7 +97,6 @@ function populateJobDropdowns() {
 
   let optionsHTML = '<option value="">-- Công việc --</option>';
   jobsList.forEach(job => {
-    // Ép kiểu chuỗi an toàn
     let jobText = (typeof job === 'object' && job !== null) ? (job.ten_cviec || Object.values(job)[0]) : job;
     if (jobText) {
       optionsHTML += `<option value="${jobText}">${jobText}</option>`;
@@ -113,7 +106,6 @@ function populateJobDropdowns() {
   if (selectMain) selectMain.innerHTML = optionsHTML;
   if (selectEdit) selectEdit.innerHTML = optionsHTML;
 
-  // Lấy công việc đã ghi nhớ từ localStorage
   const savedJob = localStorage.getItem("selected_job");
   if (savedJob && selectMain) {
     selectMain.value = savedJob;
@@ -188,7 +180,6 @@ function getLocation() {
     return;
   }
 
-  // KIỂM TRA TỒN TẠI MÃ KHÁCH HÀNG
   const existingLoc = allLocations.find(item => item.name === nameInput);
   if (existingLoc) {
     showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
@@ -401,6 +392,24 @@ function closeEditModal() {
   if (modal) modal.style.display = "none";
 }
 
+// Hàm mở Modal xác nhận GPS mới
+function askGpsUpdate(onConfirm, onCancel) {
+  const modal = document.getElementById("gpsConfirmModal");
+  if (!modal) return;
+
+  modal.style.display = "flex";
+
+  document.getElementById("btnGpsConfirm").onclick = () => {
+    modal.style.display = "none";
+    if (onConfirm) onConfirm();
+  };
+
+  document.getElementById("btnGpsCancel").onclick = () => {
+    modal.style.display = "none";
+    if (onCancel) onCancel();
+  };
+}
+
 function saveEditLocation() {
   if (!editTargetId) return;
 
@@ -436,100 +445,105 @@ function saveEditLocation() {
     return;
   }
 
-  const updateLocation = confirm("Bạn có muốn lấy và cập nhật tọa độ GPS MỚI không?");
+  // Đóng modal sửa thông tin trước
+  closeEditModal();
 
-  if (updateLocation) {
-    if (!navigator.geolocation) {
-      showToast("Thiết bị không hỗ trợ GPS!", true);
-      return;
-    }
-
-    showToast("Đang truy xuất tọa độ GPS mới...");
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newLat = position.coords.latitude;
-        const newLng = position.coords.longitude;
-        const newTime = new Date().toLocaleString("vi-VN");
-
-        const loc = allLocations.find(item => item.id === editTargetId);
-        if (loc) {
-          loc.ma_khang = newName;
-          loc.ten_nvien = newEmployee;
-          loc.ten_cviec = newJob;          
-          loc.note = newNote;
-          loc.lat = newLat;
-          loc.lng = newLng;
-          loc.time = newTime;
-        }
-
-        closeEditModal();
-        renderList(allLocations);
-        showToast("Đang cập nhật...");
-
-        fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "EDIT",
-            id: editTargetId,
-            ma_khang: newName,
-            ten_nvien: newEmployee,
-            ten_cviec: newJob,           
-            note: newNote,
-            lat: newLat,
-            lng: newLng,
-            time: newTime
-          })
-        }).then(res => res.json()).then(res => {
-          if (res.status === "success") {
-            if (loc) loc.ten_khang = res.ten_khang;
-            renderList(allLocations);
-            showToast("Cập nhật thành công!");
-          } else {
-            showToast("Lỗi: " + res.message, true);
-            fetchLocations();
-          }
-        });
-      },
-      (error) => { showToast("Không thể lấy tọa độ GPS mới!", true); },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  } else {
-    const loc = allLocations.find(item => item.id === editTargetId);
-    if (loc) {
-      loc.ma_khang = newName;
-      loc.ten_nvien = newEmployee;
-      loc.ten_cviec = newJob;      
-      loc.note = newNote;
-    }
-
-    closeEditModal();
-    renderList(allLocations);
-    showToast("Đang cập nhật...");
-
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "EDIT",
-        id: editTargetId,
-        ma_khang: newName,
-        ten_nvien: newEmployee,
-        ten_cviec: newJob,        
-        note: newNote
-      })
-    }).then(res => res.json()).then(res => {
-      if (res.status === "success") {
-        if (loc) loc.ten_khang = res.ten_khang;
-        renderList(allLocations);
-        showToast("Cập nhật thành công!");
-      } else {
-        showToast("Lỗi: " + res.message, true);
-        fetchLocations();
+  // Gọi Modal giao diện xanh/xám xác nhận GPS
+  askGpsUpdate(
+    // Bấm "Đồng ý" -> Lấy tọa độ GPS mới
+    () => {
+      if (!navigator.geolocation) {
+        showToast("Thiết bị không hỗ trợ GPS!", true);
+        return;
       }
-    });
-  }
+
+      showToast("Đang truy xuất tọa độ GPS mới...");
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLat = position.coords.latitude;
+          const newLng = position.coords.longitude;
+          const newTime = new Date().toLocaleString("vi-VN");
+
+          const loc = allLocations.find(item => item.id === editTargetId);
+          if (loc) {
+            loc.ma_khang = newName;
+            loc.ten_nvien = newEmployee;
+            loc.ten_cviec = newJob;          
+            loc.note = newNote;
+            loc.lat = newLat;
+            loc.lng = newLng;
+            loc.time = newTime;
+          }
+
+          renderList(allLocations);
+          showToast("Đang cập nhật...");
+
+          fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "EDIT",
+              id: editTargetId,
+              ma_khang: newName,
+              ten_nvien: newEmployee,
+              ten_cviec: newJob,           
+              note: newNote,
+              lat: newLat,
+              lng: newLng,
+              time: newTime
+            })
+          }).then(res => res.json()).then(res => {
+            if (res.status === "success") {
+              if (loc) loc.ten_khang = res.ten_khang;
+              renderList(allLocations);
+              showToast("Cập nhật thành công!");
+            } else {
+              showToast("Lỗi: " + res.message, true);
+              fetchLocations();
+            }
+          });
+        },
+        (error) => { showToast("Không thể lấy tọa độ GPS mới!", true); },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    },
+    // Bấm "Hủy" -> Chỉ cập nhật thông tin chữ, giữ nguyên GPS cũ
+    () => {
+      const loc = allLocations.find(item => item.id === editTargetId);
+      if (loc) {
+        loc.ma_khang = newName;
+        loc.ten_nvien = newEmployee;
+        loc.ten_cviec = newJob;      
+        loc.note = newNote;
+      }
+
+      renderList(allLocations);
+      showToast("Đang cập nhật...");
+
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "EDIT",
+          id: editTargetId,
+          ma_khang: newName,
+          ten_nvien: newEmployee,
+          ten_cviec: newJob,        
+          note: newNote
+        })
+      }).then(res => res.json()).then(res => {
+        if (res.status === "success") {
+          if (loc) loc.ten_khang = res.ten_khang;
+          renderList(allLocations);
+          showToast("Cập nhật thành công!");
+        } else {
+          showToast("Lỗi: " + res.message, true);
+          fetchLocations();
+        }
+      });
+    }
+  );
 }
 
 // 7. Toast thông báo
