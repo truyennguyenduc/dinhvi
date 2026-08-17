@@ -33,7 +33,7 @@
 
         .form-group { margin-bottom: 5px; }
 
-        /* KHUNG CHỨA 1 LOGO NẰM BÊN TRÁI 2 DÒNG CHỮ */
+        /* KHUNG CHỨA LOGO TRON VÀ 2 DÒNG CHỮ */
         .header-logo-container {
             display: flex;
             align-items: center;
@@ -46,6 +46,8 @@
             height: 44px;
             object-fit: contain;
             flex-shrink: 0;
+            /* Lọc bỏ hoàn toàn các pixel màu trắng xung quanh logo */
+            mix-blend-mode: multiply;
         }
 
         .header-text-group {
@@ -272,9 +274,9 @@
     <div class="app-container">
         <div class="fixed-header">
             <div class="form-group">
-                <!-- 1 Logo duy nhất bên trái 2 dòng chữ -->
+                <!-- Nối LOGO.png bên trái 2 dòng chữ -->
                 <div class="header-logo-container">
-                    <img src="cmis.bmp" alt="CMIS Logo" class="main-logo">
+                    <img src="LOGO.png" alt="CMIS Logo" class="main-logo">
                     <div class="header-text-group">
                         <div class="company-title">Điện lực Bến Lức-Định vị vị trí công tơ</div>
                         <label for="locName" class="customer-code-label">Mã khách hàng:</label>
