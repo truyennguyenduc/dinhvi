@@ -8,20 +8,27 @@ document.addEventListener("DOMContentLoaded", fetchLocations);
 // 1. Lấy vị trí GPS và gửi lên Apps Script
 // 1. Lấy vị trí GPS và cập nhật giao diện TỨC THÌ
 // 1. Lấy vị trí GPS và lưu
+// 3. Hàm lấy vị trí GPS hiện tại
 function getLocation() {
   const locNameInput = document.getElementById("locName");
-  const nameInput = locNameInput.value.trim().toUpperCase(); // Tự động đổi thành CHỮ IN HOA
+  const nameInput = locNameInput.value.trim().toUpperCase(); // Tự đổi thành CHỮ IN HOA
   const noteInput = document.getElementById("locNote").value.trim();
 
-  // BẮT BUỘC NHẬP MÃ KHÁCH HÀNG
+  // BẮT BUỘC NHẬP MÃ KHÁCH HÀNG VÀ PHẢI ĐỦ 13 KÝ TỰ
   if (!nameInput) {
-    alert("Cảnh báo: Bạn phải nhập Mã khách hàng trước khi lấy vị trí!");
-    locNameInput.focus(); // Tự động đưa con trỏ chuột vào ô nhập Mã KH
+    showToast("Cảnh báo: Bạn phải nhập Mã khách hàng trước khi lấy vị trí!");
+    locNameInput.focus();
+    return;
+  }
+
+  if (nameInput.length !== 13) {
+    showToast(`Cảnh báo: Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${nameInput.length} ký tự)`);
+    locNameInput.focus();
     return;
   }
 
   if (!navigator.geolocation) {
-    alert("Trình duyệt không hỗ trợ định vị GPS!");
+    showToast("Trình duyệt không hỗ trợ định vị GPS!");
     return;
   }
 
@@ -36,13 +43,15 @@ function getLocation() {
         time: new Date().toLocaleString("vi-VN")
       };
 
-      // Hiện ngay lập tức lên danh sách màn hình (không phải chờ lưu xong)
+      // Hiển thị ngay lên màn hình
       allLocations.unshift(locData);
       renderList(allLocations);
 
-      // Xóa trắng ô nhập liệu sau khi lấy thành công
-      //locNameInput.value = "";
-      //document.getElementById("locNote").value = "";
+      // Xóa trắng ô nhập liệu
+      locNameInput.value = "";
+      document.getElementById("locNote").value = "";
+
+      showToast("Đã lấy vị trí thành công!");
 
       // Gửi ngầm dữ liệu lên Google Sheet ở nền
       fetch(API_URL, {
@@ -56,15 +65,16 @@ function getLocation() {
       .then(res => res.json())
       .then(res => {
         if (res.status !== "success") {
-          alert("Lỗi lưu dữ liệu lên Google Sheet: " + res.message);
+          showToast("Lỗi lưu lên Google Sheet: " + res.message);
         }
       })
       .catch(err => {
-        console.error("Lỗi gửi dữ liệu ngầm:", err);
+        console.error(err);
+        showToast("Lỗi kết nối khi gửi dữ liệu ngầm!");
       });
     },
     (error) => {
-      alert("Không thể lấy vị trí GPS! Hãy kiểm tra xem bạn đã bật GPS và cấp quyền vị trí cho trình duyệt chưa.");
+      showToast("Không thể lấy vị trí GPS! Bác hãy kiểm tra quyền vị trí trên điện thoại.");
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
