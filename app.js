@@ -1,5 +1,8 @@
 const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
 
+// Cấu hình mật khẩu xác thực khi sửa / xóa
+const SECRET_PASSWORD = "Truyen&1978";
+
 let allLocations = [];
 let deleteTargetId = null;
 let editTargetId = null;
@@ -56,13 +59,12 @@ function getLocation() {
   if (existingLoc) {
     showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
     
-    // Tự động điền vào ô tìm kiếm và lọc ra vị trí đó ngay lập tức
     const searchInput = document.getElementById("searchInput");
     if (searchInput) {
       searchInput.value = nameInput;
       filterLocations();
     }
-    return; // Ngắt lệnh, không thêm trùng
+    return;
   }
 
   if (!navigator.geolocation) {
@@ -175,6 +177,9 @@ function filterLocations() {
 // 5. Mở/Đóng Modal Xóa
 function openConfirmModal(id) {
   deleteTargetId = id;
+  const passInput = document.getElementById("deletePasswordInput");
+  if (passInput) passInput.value = "";
+
   const modal = document.getElementById("confirmModal");
   if (modal) modal.style.display = "flex";
 
@@ -195,12 +200,18 @@ function closeConfirmModal() {
 function executeDelete() {
   if (!deleteTargetId) return;
 
+  const inputPass = document.getElementById("deletePasswordInput").value.trim();
+  if (inputPass !== SECRET_PASSWORD) {
+    showToast("Mật khẩu xác nhận không đúng!", true);
+    return;
+  }
+
   const id = deleteTargetId;
   closeConfirmModal();
 
   allLocations = allLocations.filter(loc => loc.id !== id);
   renderList(allLocations);
-  showToast("Đã xóa vị trí!");
+  showToast("Đã xóa vị trí thành công!");
 
   fetch(API_URL, {
     method: "POST",
@@ -217,6 +228,9 @@ function openEditModal(id) {
   editTargetId = id;
   document.getElementById("editNameInput").value = loc.name;
   document.getElementById("editNoteInput").value = loc.note || "";
+  
+  const passInput = document.getElementById("editPasswordInput");
+  if (passInput) passInput.value = "";
 
   const modal = document.getElementById("editModal");
   if (modal) modal.style.display = "flex";
@@ -231,6 +245,12 @@ function closeEditModal() {
 function saveEditLocation() {
   if (!editTargetId) return;
 
+  const inputPass = document.getElementById("editPasswordInput").value.trim();
+  if (inputPass !== SECRET_PASSWORD) {
+    showToast("Mật khẩu xác nhận không đúng!", true);
+    return;
+  }
+
   const newName = document.getElementById("editNameInput").value.trim().toUpperCase();
   const newNote = document.getElementById("editNoteInput").value.trim();
 
@@ -244,7 +264,6 @@ function saveEditLocation() {
     return;
   }
 
-  // Kiểm tra nếu chỉnh sửa mã mà bị trùng với một Mã KH khác đã lưu
   const duplicate = allLocations.find(item => item.name === newName && item.id !== editTargetId);
   if (duplicate) {
     showToast(`Mã KH "${newName}" đã thuộc về bản ghi khác!`, true);
@@ -273,7 +292,7 @@ function saveEditLocation() {
   });
 }
 
-// 7. Toast thông báo (isWarning = true sẽ đổi sang màu đỏ)
+// 7. Toast thông báo
 function showToast(message, isWarning = false) {
   const container = document.getElementById("toast-container");
   if (!container) return;
