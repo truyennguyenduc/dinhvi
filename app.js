@@ -314,8 +314,8 @@ function filterLocations() {
   const filtered = allLocations.filter(loc => 
     loc.name.toLowerCase().includes(query) ||
     (loc.ten_khang && loc.ten_khang.toLowerCase().includes(query)) ||
-    (loc.ten_cviec && loc.ten_cviec.toLowerCase().includes(query)) ||
     (loc.ten_nvien && loc.ten_nvien.toLowerCase().includes(query)) ||
+    (loc.ten_cviec && loc.ten_cviec.toLowerCase().includes(query)) ||    
     (loc.note && loc.note.toLowerCase().includes(query)) ||
     `${loc.lat},${loc.lng}`.includes(query)
   );
@@ -373,8 +373,8 @@ function openEditModal(id) {
 
   editTargetId = id;
   document.getElementById("editNameInput").value = loc.name;
-  document.getElementById("editJobSelect").value = loc.ten_cviec || "";
   document.getElementById("editEmployeeSelect").value = loc.ten_nvien || "";
+  document.getElementById("editJobSelect").value = loc.ten_cviec || "";
   document.getElementById("editNoteInput").value = loc.note || "";
   
   const passInput = document.getElementById("editPasswordInput");
@@ -444,8 +444,8 @@ function saveEditLocation() {
         const loc = allLocations.find(item => item.id === editTargetId);
         if (loc) {
           loc.name = newName;
-          loc.ten_cviec = newJob;
           loc.ten_nvien = newEmployee;
+          loc.ten_cviec = newJob;          
           loc.note = newNote;
           loc.lat = newLat;
           loc.lng = newLng;
@@ -463,8 +463,8 @@ function saveEditLocation() {
             action: "EDIT",
             id: editTargetId,
             name: newName,
-            ten_cviec: newJob,
             ten_nvien: newEmployee,
+            ten_cviec: newJob,           
             note: newNote,
             lat: newLat,
             lng: newLng,
@@ -488,8 +488,8 @@ function saveEditLocation() {
     const loc = allLocations.find(item => item.id === editTargetId);
     if (loc) {
       loc.name = newName;
-      loc.ten_cviec = newJob;
       loc.ten_nvien = newEmployee;
+      loc.ten_cviec = newJob;      
       loc.note = newNote;
     }
 
@@ -504,8 +504,8 @@ function saveEditLocation() {
         action: "EDIT",
         id: editTargetId,
         name: newName,
-        ten_cviec: newJob,
         ten_nvien: newEmployee,
+        ten_cviec: newJob,        
         note: newNote
       })
     }).then(res => res.json()).then(res => {
