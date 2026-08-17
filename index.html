@@ -239,9 +239,9 @@
                 <textarea id="locNote" placeholder="Nhập ghi chú thêm nếu có..."></textarea>
             </div>
 
-            <button class="btn-get" onclick="getLocation()">Lấy vị trí hiện tại</button>
+            <button class="btn-get" onclick="getLocation()">Lấy vị trí treo công tơ</button>
 
-            <div class="list-title">Danh sách vị trí đã lưu: <span id="locationCount" style="color: #007bff;">(0)</span></div>
+            <div class="list-title">Danh sách vị trí công tơ: <span id="locationCount" style="color: #007bff;">(0)</span></div>
 
             <div class="search-box">
                 <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm tên, ghi chú, tọa độ..." oninput="filterLocations()">
@@ -251,7 +251,7 @@
         <div class="scrollable-content">
             <div id="loadingBox" class="loading-box">
                 <div class="spinner"></div>
-                <span>Đang tải danh sách vị trí...</span>
+                <span>Đang tải danh sách...</span>
             </div>
 
             <ul id="locationList"></ul>
