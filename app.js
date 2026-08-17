@@ -43,7 +43,7 @@ function populateEmployeeDropdowns() {
   const selectMain = document.getElementById("employeeSelect");
   const selectEdit = document.getElementById("editEmployeeSelect");
 
-  let optionsHTML = '<option value="">-- Chọn nhân viên --</option>';
+  let optionsHTML = '<option value="">Chọn nhân viên</option>';
   employeesList.forEach(emp => {
     let empText = (typeof emp === 'object' && emp !== null) ? (emp.ten_nvien || Object.values(emp)[0]) : emp;
     if (empText) {
@@ -95,7 +95,7 @@ function populateJobDropdowns() {
   const selectMain = document.getElementById("jobSelect");
   const selectEdit = document.getElementById("editJobSelect");
 
-  let optionsHTML = '<option value="">-- Công việc --</option>';
+  let optionsHTML = '<option value="">Công việc</option>';
   jobsList.forEach(job => {
     let jobText = (typeof job === 'object' && job !== null) ? (job.ten_cviec || Object.values(job)[0]) : job;
     if (jobText) {
