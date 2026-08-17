@@ -60,12 +60,20 @@ function onEmployeeChange() {
 }
 
 // 0.1 Tải danh sách công việc từ Apps Script
+// 0.1 Tải danh sách công việc từ Apps Script
 function fetchJobs() {
   fetch(`${API_URL}?action=getJobs`)
     .then(res => res.json())
     .then(res => {
       if (res.status === "success" && Array.isArray(res.data)) {
-        jobsList = res.data;
+        // Xử lý nếu res.data trả về mảng chứa Object hoặc mảng mảng
+        jobsList = res.data.map(item => {
+          if (typeof item === 'object' && item !== null) {
+            // Nếu là Object, lấy giá trị của thuộc tính đầu tiên hoặc tên cột tương ứng
+            return item.ten_cviec || item.name || Object.values(item)[0] || "";
+          }
+          return item;
+        });
       } else {
         jobsList = [];
       }
@@ -73,6 +81,7 @@ function fetchJobs() {
     })
     .catch(err => {
       console.error("Lỗi tải danh sách công việc:", err);
+      jobsList = [];
       populateJobDropdowns();
     });
 }
@@ -83,7 +92,11 @@ function populateJobDropdowns() {
 
   let optionsHTML = '<option value="">-- CV --</option>';
   jobsList.forEach(job => {
-    optionsHTML += `<option value="${job}">${job}</option>`;
+    // Ép kiểu chuỗi an toàn
+    let jobText = (typeof job === 'object' && job !== null) ? (job.ten_cviec || Object.values(job)[0]) : job;
+    if (jobText) {
+      optionsHTML += `<option value="${jobText}">${jobText}</option>`;
+    }
   });
 
   if (selectMain) selectMain.innerHTML = optionsHTML;
