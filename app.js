@@ -1,5 +1,5 @@
 // Thay URL copy ở Apps Script vào giữa 2 dấu ngoặc kép này
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pI5EQMLSEQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
 
 let allLocations = [];
 
