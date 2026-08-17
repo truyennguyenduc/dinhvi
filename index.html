@@ -33,41 +33,40 @@
 
         .form-group { margin-bottom: 5px; }
 
-        /* KÍCH THƯỚC VÀ CĂN CHỈNH LOGO VỚI CHỮ */
-        .header-title-wrapper {
+        /* KHUNG CHỨA 1 LOGO NẰM BÊN TRÁI 2 DÒNG CHỮ */
+        .header-logo-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 6px;
         }
 
-        .logo-cmis {
-            width: 28px;
-            height: 28px;
+        .main-logo {
+            width: 44px;
+            height: 44px;
             object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .header-text-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .company-title {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: bold;
             color: #1E90FF;
             line-height: 1.2;
+            margin-bottom: 2px;
         }
 
-        .label-with-logo {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: bold;
-            margin-bottom: 4px;
-            color: #444;
+        .customer-code-label {
             font-size: 14px;
-        }
-
-        .logo-cmis-small {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
+            font-weight: bold;
+            color: #444;
+            line-height: 1.2;
         }
 
         label { display: block; font-weight: bold; margin-bottom: 4px; color: #444; font-size: 14px; }
@@ -273,17 +272,14 @@
     <div class="app-container">
         <div class="fixed-header">
             <div class="form-group">
-                <!-- Tiêu đề có logo CMIS nằm bên trái -->
-                <div class="header-title-wrapper">
-                    <img src="LOGO.png" alt="CMIS Logo" class="logo-cmis">
-                    <div class="company-title">Điện lực Bến Lức-Định vị vị trí công tơ</div>
+                <!-- 1 Logo duy nhất bên trái 2 dòng chữ -->
+                <div class="header-logo-container">
+                    <img src="cmis.bmp" alt="CMIS Logo" class="main-logo">
+                    <div class="header-text-group">
+                        <div class="company-title">Điện lực Bến Lức-Định vị vị trí công tơ</div>
+                        <label for="locName" class="customer-code-label">Mã khách hàng:</label>
+                    </div>
                 </div>
-
-                <!-- Nhãn Mã khách hàng có logo CMIS nhỏ nằm bên trái -->
-                <label for="locName" class="label-with-logo">
-                    <img src="cmis.bmp" alt="CMIS Logo" class="logo-cmis-small">
-                    <span>Mã khách hàng:</span>
-                </label>
                 <input type="text" id="locName" style="text-transform: uppercase;" value="PB060600">
             </div>
 
