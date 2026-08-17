@@ -41,8 +41,8 @@ function getLocation() {
       renderList(allLocations);
 
       // Xóa trắng ô nhập liệu sau khi lấy thành công
-      locNameInput.value = "";
-      document.getElementById("locNote").value = "";
+      //locNameInput.value = "";
+      //document.getElementById("locNote").value = "";
 
       // Gửi ngầm dữ liệu lên Google Sheet ở nền
       fetch(API_URL, {
