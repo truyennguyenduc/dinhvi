@@ -134,10 +134,10 @@ function getLocation() {
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      // Chỉ khi lấy được tọa độ thành công mới đóng gói và lưu dữ liệu
       const locData = {
         id: Date.now(),
         name: nameInput,
+        ten_khang: "Đang kiểm tra...",
         ten_nvien: employeeInput,
         note: noteInput,
         lat: position.coords.latitude,
@@ -151,7 +151,7 @@ function getLocation() {
       locNameInput.value = "PB060600";
       document.getElementById("locNote").value = "";
 
-      showToast("Đã lấy vị trí và lưu thành công!");
+      showToast("Đang kiểm tra danh mục và lưu vị trí...");
 
       fetch(API_URL, {
         method: "POST",
@@ -163,13 +163,19 @@ function getLocation() {
       })
       .then(res => res.json())
       .then(res => {
-        if (res.status !== "success") {
-          showToast("Lỗi lưu lên Google Sheet: " + res.message, true);
+        if (res.status === "success") {
+          locData.ten_khang = res.ten_khang;
+          renderList(allLocations);
+          showToast("Đã lưu vị trí thành công!");
+        } else {
+          allLocations = allLocations.filter(item => item.id !== locData.id);
+          renderList(allLocations);
+          showToast("Lỗi: " + res.message, true);
         }
       })
       .catch(err => {
         console.error(err);
-        showToast("Lỗi kết nối khi gửi dữ liệu ngầm!", true);
+        showToast("Lỗi kết nối khi gửi dữ liệu!", true);
       });
     },
     (error) => {
@@ -222,7 +228,7 @@ function renderList(locations) {
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
 
     li.innerHTML = `
-      <div class="loc-name">${loc.name}</div>
+      <div class="loc-name">${loc.name} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
       <div class="loc-employee">👤 Nhân viên lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"}</div>
       <div class="loc-note">${loc.note ? loc.note : "Không có ghi chú"}</div>
       <span class="time">🕒 ${loc.time}</span>
@@ -244,6 +250,7 @@ function filterLocations() {
   const query = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allLocations.filter(loc => 
     loc.name.toLowerCase().includes(query) ||
+    (loc.ten_khang && loc.ten_khang.toLowerCase().includes(query)) ||
     (loc.ten_nvien && loc.ten_nvien.toLowerCase().includes(query)) ||
     (loc.note && loc.note.toLowerCase().includes(query)) ||
     `${loc.lat},${loc.lng}`.includes(query)
@@ -382,7 +389,7 @@ function saveEditLocation() {
 
         closeEditModal();
         renderList(allLocations);
-        showToast("Đã cập nhật thông tin và tọa độ GPS mới!");
+        showToast("Đang cập nhật dữ liệu...");
 
         fetch(API_URL, {
           method: "POST",
@@ -397,6 +404,17 @@ function saveEditLocation() {
             lng: newLng,
             time: newTime
           })
+        })
+        .then(res => res.json())
+        .then(res => {
+          if (res.status === "success") {
+            if (loc) loc.ten_khang = res.ten_khang;
+            renderList(allLocations);
+            showToast("Cập nhật thành công!");
+          } else {
+            showToast("Lỗi: " + res.message, true);
+            fetchLocations();
+          }
         });
       },
       (error) => {
@@ -427,7 +445,7 @@ function saveEditLocation() {
 
     closeEditModal();
     renderList(allLocations);
-    showToast("Đã cập nhật thông tin (Giữ nguyên tọa độ cũ)!");
+    showToast("Đang cập nhật dữ liệu...");
 
     fetch(API_URL, {
       method: "POST",
@@ -439,6 +457,17 @@ function saveEditLocation() {
         ten_nvien: newEmployee,
         note: newNote
       })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        if (loc) loc.ten_khang = res.ten_khang;
+        renderList(allLocations);
+        showToast("Cập nhật thành công!");
+      } else {
+        showToast("Lỗi: " + res.message, true);
+        fetchLocations();
+      }
     });
   }
 }
