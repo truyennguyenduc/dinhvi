@@ -4,10 +4,59 @@ const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE
 const SECRET_PASSWORD = "Truyen&1978";
 
 let allLocations = [];
+let employeesList = [];
 let deleteTargetId = null;
 let editTargetId = null;
 
-document.addEventListener("DOMContentLoaded", fetchLocations);
+document.addEventListener("DOMContentLoaded", () => {
+  fetchEmployees();
+  fetchLocations();
+});
+
+// 0. Tải danh sách nhân viên từ Apps Script
+function fetchEmployees() {
+  fetch(`${API_URL}?action=getEmployees`)
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success" && Array.isArray(res.data)) {
+        employeesList = res.data;
+      } else {
+        employeesList = [];
+      }
+      populateEmployeeDropdowns();
+    })
+    .catch(err => {
+      console.error("Lỗi tải danh sách nhân viên:", err);
+      populateEmployeeDropdowns();
+    });
+}
+
+function populateEmployeeDropdowns() {
+  const selectMain = document.getElementById("employeeSelect");
+  const selectEdit = document.getElementById("editEmployeeSelect");
+
+  let optionsHTML = '<option value="">-- Chọn nhân viên --</option>';
+  employeesList.forEach(emp => {
+    optionsHTML += `<option value="${emp}">${emp}</option>`;
+  });
+
+  if (selectMain) selectMain.innerHTML = optionsHTML;
+  if (selectEdit) selectEdit.innerHTML = optionsHTML;
+
+  // Lấy nhân viên đã ghi nhớ từ localStorage
+  const savedEmployee = localStorage.getItem("selected_employee");
+  if (savedEmployee && selectMain) {
+    selectMain.value = savedEmployee;
+  }
+}
+
+// Khi người dùng thay đổi lựa chọn nhân viên thì ghi nhớ lại
+function onEmployeeChange() {
+  const selectMain = document.getElementById("employeeSelect");
+  if (selectMain) {
+    localStorage.setItem("selected_employee", selectMain.value);
+  }
+}
 
 // 1. Tải danh sách từ Google Sheet
 function fetchLocations() {
@@ -40,6 +89,8 @@ function fetchLocations() {
 function getLocation() {
   const locNameInput = document.getElementById("locName");
   const nameInput = locNameInput.value.trim().toUpperCase();
+  const employeeSelect = document.getElementById("employeeSelect");
+  const employeeInput = employeeSelect ? employeeSelect.value : "";
   const noteInput = document.getElementById("locNote").value.trim();
 
   if (!nameInput) {
@@ -51,6 +102,12 @@ function getLocation() {
   if (nameInput.length !== 13) {
     showToast(`Cảnh báo: Mã khách hàng phải đủ 13 ký tự! (Hiện tại: ${nameInput.length} ký tự)`, true);
     locNameInput.focus();
+    return;
+  }
+
+  if (!employeeInput) {
+    showToast("Cảnh báo: Bạn phải chọn Nhân viên thực hiện!", true);
+    if (employeeSelect) employeeSelect.focus();
     return;
   }
 
@@ -81,6 +138,7 @@ function getLocation() {
       const locData = {
         id: Date.now(),
         name: nameInput,
+        ten_nvien: employeeInput,
         note: noteInput,
         lat: position.coords.latitude,
         lng: position.coords.longitude,
@@ -115,7 +173,6 @@ function getLocation() {
       });
     },
     (error) => {
-      // Xử lý các trường hợp không bật GPS hoặc không cấp quyền
       switch (error.code) {
         case error.PERMISSION_DENIED:
           showToast("Lỗi: Bạn đã từ chối quyền vị trí! Hãy cấp quyền GPS cho trình duyệt.", true);
@@ -166,6 +223,7 @@ function renderList(locations) {
 
     li.innerHTML = `
       <div class="loc-name">${loc.name}</div>
+      <div class="loc-employee">👤 Nhân viên: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"}</div>
       <div class="loc-note">${loc.note ? loc.note : "Không có ghi chú"}</div>
       <span class="time">🕒 ${loc.time}</span>
       <div class="coords">📍 Tọa độ: ${loc.lat}, ${loc.lng}</div>
@@ -186,6 +244,7 @@ function filterLocations() {
   const query = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allLocations.filter(loc => 
     loc.name.toLowerCase().includes(query) ||
+    (loc.ten_nvien && loc.ten_nvien.toLowerCase().includes(query)) ||
     (loc.note && loc.note.toLowerCase().includes(query)) ||
     `${loc.lat},${loc.lng}`.includes(query)
   );
@@ -245,6 +304,7 @@ function openEditModal(id) {
 
   editTargetId = id;
   document.getElementById("editNameInput").value = loc.name;
+  document.getElementById("editEmployeeSelect").value = loc.ten_nvien || "";
   document.getElementById("editNoteInput").value = loc.note || "";
   
   const passInput = document.getElementById("editPasswordInput");
@@ -270,6 +330,7 @@ function saveEditLocation() {
   }
 
   const newName = document.getElementById("editNameInput").value.trim().toUpperCase();
+  const newEmployee = document.getElementById("editEmployeeSelect").value;
   const newNote = document.getElementById("editNoteInput").value.trim();
 
   if (!newName) {
@@ -282,17 +343,20 @@ function saveEditLocation() {
     return;
   }
 
+  if (!newEmployee) {
+    showToast("Bạn phải chọn Nhân viên thực hiện!", true);
+    return;
+  }
+
   const duplicate = allLocations.find(item => item.name === newName && item.id !== editTargetId);
   if (duplicate) {
     showToast(`Mã KH "${newName}" đã thuộc về bản ghi khác!`, true);
     return;
   }
 
-  // Hỏi người dùng có muốn cập nhật tọa độ GPS mới không
   const updateLocation = confirm("Bạn có muốn lấy và cập nhật tọa độ GPS MỚI không?\n\n- Bấm 'OK' để cập nhật tọa độ GPS mới.\n- Bấm 'Hủy' (Cancel) để GIỮ TỌA ĐỘ CŨ.");
 
   if (updateLocation) {
-    // Trường hợp cập nhật cả tọa độ GPS mới
     if (!navigator.geolocation) {
       showToast("Thiết bị không hỗ trợ GPS để cập nhật vị trí!", true);
       return;
@@ -309,6 +373,7 @@ function saveEditLocation() {
         const loc = allLocations.find(item => item.id === editTargetId);
         if (loc) {
           loc.name = newName;
+          loc.ten_nvien = newEmployee;
           loc.note = newNote;
           loc.lat = newLat;
           loc.lng = newLng;
@@ -326,6 +391,7 @@ function saveEditLocation() {
             action: "EDIT",
             id: editTargetId,
             name: newName,
+            ten_nvien: newEmployee,
             note: newNote,
             lat: newLat,
             lng: newLng,
@@ -352,10 +418,10 @@ function saveEditLocation() {
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   } else {
-    // Trường hợp giữ tọa độ cũ (Chỉ cập nhật mã KH và Ghi chú)
     const loc = allLocations.find(item => item.id === editTargetId);
     if (loc) {
       loc.name = newName;
+      loc.ten_nvien = newEmployee;
       loc.note = newNote;
     }
 
@@ -370,6 +436,7 @@ function saveEditLocation() {
         action: "EDIT",
         id: editTargetId,
         name: newName,
+        ten_nvien: newEmployee,
         note: newNote
       })
     });
