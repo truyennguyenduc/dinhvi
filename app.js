@@ -45,7 +45,7 @@ function populateEmployeeDropdowns() {
   const selectMain = document.getElementById("employeeSelect");
   const selectEdit = document.getElementById("editEmployeeSelect");
 
-  let optionsHTML = '<option value="">-- Chọn NV --</option>';
+  let optionsHTML = '<option value="">-- Chọn nhân viên --</option>';
   employeesList.forEach(emp => {
     let empText = (typeof emp === 'object' && emp !== null) ? (emp.ten_nvien || Object.values(emp)[0]) : emp;
     if (empText) {
