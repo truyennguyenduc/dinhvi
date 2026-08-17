@@ -1,5 +1,5 @@
 // Thay URL Web App thu được sau khi triển khai Apps Script vào đây
-const API_URL = "https://script.google.com/u/0/home/projects/1Ss5G9j8pAsGVdguppLMQlXWUELpwlM7BXUJiXgf9QKSQLcpXwe-xhVQZ/edit";
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
 
 let allLocations = [];
 
