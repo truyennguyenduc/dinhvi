@@ -1,93 +1,183 @@
-const SPREADSHEET_ID = "13dMMeQn-IS6y_yoI_LVj3paZAH-e3PmNH8Nj_AR4tts";
-const SHEET_NAME = "dinh_vi";
+// Thay URL Web App thu được sau khi triển khai Apps Script vào đây
+const API_URL = "https://script.google.com/u/0/home/projects/1Ss5G9j8pAsGVdguppLMQlXWUELpwlM7BXUJiXgf9QKSQLcpXwe-xhVQZ/edit";
 
-function doPost(e) {
-  try {
-    if (!e || !e.postData || !e.postData.contents) {
-      return responseJSON({ status: "error", message: "Không tìm thấy dữ liệu POST" });
-    }
+let allLocations = [];
 
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
-    
-    if (!sheet) {
-      return responseJSON({ status: "error", message: "Không tìm thấy sheet " + SHEET_NAME });
-    }
+// Tự động tải danh sách khi mở trang
+document.addEventListener("DOMContentLoaded", fetchLocations);
 
-    if (action === "ADD") {
-      const loc = data.location;
-      sheet.appendRow([loc.id, loc.name, loc.note, loc.lat, loc.lng, loc.time]);
-      return responseJSON({ status: "success", message: "Đã thêm vị trí" });
-    }
-    
-    if (action === "DELETE") {
-      const id = data.id;
-      const rows = sheet.getDataRange().getValues();
-      for (let i = 1; i < rows.length; i++) {
-        if (rows[i][0] == id) {
-          sheet.deleteRow(i + 1);
-          return responseJSON({ status: "success", message: "Đã xóa vị trí" });
-        }
-      }
-      return responseJSON({ status: "error", message: "Không tìm thấy ID" });
-    }
+// 1. Lấy vị trí GPS và lưu lên Google Sheet
+function getLocation() {
+  const nameInput = document.getElementById("locName").value.trim();
+  const noteInput = document.getElementById("locNote").value.trim();
 
-    if (action === "EDIT") {
-      const id = data.id;
-      const rows = sheet.getDataRange().getValues();
-      for (let i = 1; i < rows.length; i++) {
-        if (rows[i][0] == id) {
-          sheet.getRange(i + 1, 2).setValue(data.name);
-          sheet.getRange(i + 1, 3).setValue(data.note);
-          return responseJSON({ status: "success", message: "Đã cập nhật vị trí" });
-        }
-      }
-      return responseJSON({ status: "error", message: "Không tìm thấy ID" });
-    }
-
-    if (action === "CLEAR") {
-      const lastRow = sheet.getLastRow();
-      if (lastRow > 1) {
-        sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
-      }
-      return responseJSON({ status: "success", message: "Đã xóa toàn bộ lịch sử" });
-    }
-
-  } catch (err) {
-    return responseJSON({ status: "error", message: err.toString() });
+  if (!nameInput) {
+    alert("Vui lòng nhập Mã khách hàng / Tên vị trí!");
+    return;
   }
-}
 
-function doGet(e) {
-  try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
-    if (!sheet) {
-      return responseJSON({ status: "error", message: "Không tìm thấy sheet " + SHEET_NAME });
-    }
+  if (!navigator.geolocation) {
+    alert("Trình duyệt của bạn không hỗ trợ lấy vị trí GPS!");
+    return;
+  }
 
-    const rows = sheet.getDataRange().getValues();
-    const locations = [];
-    
-    for (let i = 1; i < rows.length; i++) {
-      locations.push({
-        id: Number(rows[i][0]),
-        name: String(rows[i][1]),
-        note: String(rows[i][2]),
-        lat: Number(rows[i][3]),
-        lng: Number(rows[i][4]),
-        time: String(rows[i][5])
+  alert("Đang lấy vị trí GPS, vui lòng đợi...");
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const locData = {
+        id: Date.now(),
+        name: nameInput,
+        note: noteInput,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        time: new Date().toLocaleString("vi-VN")
+      };
+
+      // Gửi dữ liệu tới Apps Script
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "ADD",
+          location: locData
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "success") {
+          alert("Lưu vị trí thành công!");
+          document.getElementById("locName").value = "";
+          document.getElementById("locNote").value = "";
+          fetchLocations(); // Tải lại danh sách
+        } else {
+          alert("Lỗi từ server: " + res.message);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Lỗi kết nối khi lưu dữ liệu!");
       });
-    }
-    
-    locations.reverse();
-    return responseJSON({ status: "success", data: locations });
-  } catch (err) {
-    return responseJSON({ status: "error", message: err.toString() });
-  }
+    },
+    (error) => {
+      alert("Không thể lấy vị trí! Hãy đảm bảo bạn đã bật GPS và cho phép cấp quyền vị trí.");
+    },
+    { enableHighAccuracy: true }
+  );
 }
 
-function responseJSON(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
+// 2. Tải danh sách vị trí từ Google Sheet
+function fetchLocations() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        allLocations = res.data || [];
+        renderList(allLocations);
+      }
+    })
+    .catch(err => console.error("Lỗi tải danh sách:", err));
+}
+
+// 3. Hiển thị danh sách ra màn hình
+function renderList(list) {
+  const ul = document.getElementById("locationList");
+  ul.innerHTML = "";
+
+  list.forEach(loc => {
+    const li = document.createElement("li");
+    const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+
+    li.innerHTML = `
+      <div class="loc-name">${loc.name}</div>
+      <div class="loc-note">${loc.note || "Không có ghi chú"}</div>
+      <span class="time">🕒 ${loc.time}</span>
+      <div class="coords">📍 Tọa độ: ${loc.lat}, ${loc.lng}</div>
+      <a class="maps-link" href="${mapsUrl}" target="_blank">Xem trên Google Maps</a>
+      
+      <div class="action-bar">
+        <button class="btn-edit" onclick="editLocation(${loc.id}, '${loc.name}', '${loc.note}')">Sửa</button>
+        <button class="btn-delete" onclick="deleteLocation(${loc.id})">Xóa</button>
+      </div>
+    `;
+
+    li.addEventListener("click", (e) => {
+      if (e.target.tagName !== "BUTTON" && e.target.tagName !== "A") {
+        li.classList.toggle("selected");
+      }
+    });
+
+    ul.appendChild(li);
+  });
+}
+
+// 4. Tìm kiếm vị trí
+function filterLocations() {
+  const keyword = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = allLocations.filter(loc => 
+    loc.name.toLowerCase().includes(keyword) ||
+    loc.note.toLowerCase().includes(keyword) ||
+    `${loc.lat},${loc.lng}`.includes(keyword)
+  );
+  renderList(filtered);
+}
+
+// 5. Xóa 1 mục
+function deleteLocation(id) {
+  if (!confirm("Bạn có chắc chắn muốn xóa vị trí này?")) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "DELETE", id: id })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      fetchLocations();
+    } else {
+      alert("Xóa thất bại: " + res.message);
+    }
+  });
+}
+
+// 6. Sửa thông tin
+function editLocation(id, oldName, oldNote) {
+  const newName = prompt("Nhập tên/Mã khách hàng mới:", oldName);
+  if (newName === null) return;
+  const newNote = prompt("Nhập ghi chú mới:", oldNote);
+  if (newNote === null) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "EDIT", id: id, name: newName, note: newNote })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      fetchLocations();
+    } else {
+      alert("Cập nhật thất bại: " + res.message);
+    }
+  });
+}
+
+// 7. Xóa toàn bộ lịch sử
+function clearLocations() {
+  if (!confirm("Cảnh báo: Bạn có chắc chắn muốn xóa toàn bộ danh sách?")) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "CLEAR" })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      fetchLocations();
+    } else {
+      alert("Xóa tất cả thất bại: " + res.message);
+    }
+  });
 }
