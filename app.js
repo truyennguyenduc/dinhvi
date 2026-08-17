@@ -223,7 +223,7 @@ function renderList(locations) {
 
     li.innerHTML = `
       <div class="loc-name">${loc.name}</div>
-      <div class="loc-employee">👤 Nhân viên: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"}</div>
+      <div class="loc-employee">👤 Nhân viên lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"}</div>
       <div class="loc-note">${loc.note ? loc.note : "Không có ghi chú"}</div>
       <span class="time">🕒 ${loc.time}</span>
       <div class="coords">📍 Tọa độ: ${loc.lat}, ${loc.lng}</div>
