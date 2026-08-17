@@ -5,34 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ghi nhớ vị trí công tơ của khách hàng</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 15px; margin: 0; background: #f4f4f9; color: #333; }
-        h2 { text-align: center; margin-top: 10px; margin-bottom: 20px; font-size: 22px; }
+        /* Thiết lập chiều cao tràn màn hình và ẩn cuộn toàn trang */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f9;
+            color: #333;
+            overflow: hidden; /* Cố định toàn màn hình */
+        }
+
+        /* Container chính sử dụng Flexbox bố trí theo chiều dọc */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 600px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            padding: 12px;
+        }
+
+        /* Khung chứa các ô nhập liệu & nút bấm - CỐ ĐỊNH PHÍA TRÊN */
+        .fixed-header {
+            flex-shrink: 0; /* Không co lại khi danh sách dài */
+            background: #f4f4f9;
+            padding-bottom: 8px;
+        }
+
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; color: #444; font-size: 14px; }
         
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #444; }
         input[type="text"], textarea { 
             width: 100%; 
-            padding: 12px; 
+            padding: 10px 12px; 
             border: 1px solid #ccc; 
             border-radius: 8px; 
             box-sizing: border-box; 
             font-size: 15px;
             background: #fff;
         }
-        textarea { height: 80px; resize: vertical; }
+        textarea { height: 60px; resize: none; }
 
-        button { width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 6px 0; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
         .btn-get { background: #28a745; color: white; }
-        .btn-clear { background: #dc3545; color: white; }
         
-        .search-box { margin-top: 20px; }
+        .search-box { margin-top: 8px; }
         .search-input { border: 2px solid #007bff; background: #fff; }
 
-        ul { list-style-type: none; padding: 0; margin-top: 15px; }
+        .list-title {
+            margin-top: 10px; 
+            margin-bottom: 6px; 
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Khung chứa danh sách - TỰ ĐỘNG GIÃN VÀ TRƯỢT KHI DÀI */
+        .scrollable-content {
+            flex: 1; /* Chiếm toàn bộ khoảng trống còn lại */
+            overflow-y: auto; /* Cho phép cuộn dọc */
+            -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iPhone/Safari */
+            padding-right: 2px; /* Tránh đè thanh cuộn */
+        }
+
+        ul { list-style-type: none; padding: 0; margin: 0; }
         li { 
             background: white; 
-            margin-bottom: 12px; 
-            padding: 14px; 
+            margin-bottom: 10px; 
+            padding: 12px; 
             border-radius: 8px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             cursor: pointer;
@@ -41,21 +91,21 @@
         }
         li:hover { border-color: #007bff; }
         
-        .loc-name { font-size: 17px; font-weight: bold; color: #111; margin-bottom: 4px; }
-        .loc-note { font-size: 14px; color: #555; margin-bottom: 6px; font-style: italic; }
-        .time { font-size: 13px; color: #777; display: block; margin-bottom: 6px; }
-        .coords { font-size: 15px; margin-bottom: 6px; color: #222; }
-        .maps-link { display: inline-block; color: #0056b3; text-decoration: underline; font-weight: bold; font-size: 15px; }
+        .loc-name { font-size: 16px; font-weight: bold; color: #111; margin-bottom: 4px; }
+        .loc-note { font-size: 13px; color: #555; margin-bottom: 6px; font-style: italic; }
+        .time { font-size: 12px; color: #777; display: block; margin-bottom: 6px; }
+        .coords { font-size: 14px; margin-bottom: 6px; color: #222; }
+        .maps-link { display: inline-block; color: #0056b3; text-decoration: underline; font-weight: bold; font-size: 14px; }
         
         /* Khung chứa nút Sửa / Xóa khi click vào dòng */
         .action-bar { 
             display: none; 
-            margin-top: 12px; 
-            padding-top: 10px; 
+            margin-top: 10px; 
+            padding-top: 8px; 
             border-top: 1px dashed #ddd; 
-            gap: 10px; 
+            gap: 8px; 
         }
-        .action-bar button { width: 50%; padding: 8px; font-size: 14px; margin: 0; }
+        .action-bar button { width: 50%; padding: 8px; font-size: 13px; margin: 0; }
         .btn-edit { background: #ffc107; color: #000; }
         .btn-delete { background: #dc3545; color: #fff; }
         
@@ -63,25 +113,34 @@
     </style>
 </head>
 <body>
-    <div class="form-group">
-        <label for="locName">Mã khách hàng:</label>
-        <input type="text" id="locName" style="text-transform: uppercase;" value="PB060600">
+
+    <div class="app-container">
+        <!-- PHẦN CỐ ĐỊNH TRÊN CÙNG -->
+        <div class="fixed-header">
+            <div class="form-group">
+                <label for="locName">Mã khách hàng:</label>
+                <input type="text" id="locName" style="text-transform: uppercase;" placeholder="Nhập mã KH...">
+            </div>
+
+            <div class="form-group">
+                <label for="locNote">Ghi chú:</label>
+                <textarea id="locNote" placeholder="Nhập ghi chú thêm nếu có..."></textarea>
+            </div>
+
+            <button class="btn-get" onclick="getLocation()">Lấy vị trí hiện tại</button>
+
+            <div class="list-title">Danh sách vị trí đã lưu:</div>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm tên, ghi chú, tọa độ..." oninput="filterLocations()">
+            </div>
+        </div>
+
+        <!-- PHẦN DANH SÁCH CUỘN TRƯỢT -->
+        <div class="scrollable-content">
+            <ul id="locationList"></ul>
+        </div>
     </div>
-
-    <div class="form-group">
-        <label for="locNote">Ghi chú:</label>
-        <textarea id="locNote" placeholder="Nhập ghi chú thêm nếu có..."></textarea>
-    </div>
-
-    <button class="btn-get" onclick="getLocation()">Lấy vị trí hiện tại</button>
-
-    <h3 style="margin-top: 25px; margin-bottom: 10px;">Danh sách vị trí đã lưu:</h3>
-
-    <div class="search-box">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Tìm kiếm tên, ghi chú, tọa độ..." oninput="filterLocations()">
-    </div>
-
-    <ul id="locationList"></ul>
 
     <script src="app.js"></script>
 </body>
