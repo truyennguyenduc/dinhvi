@@ -287,18 +287,18 @@
                 <input type="text" id="locName" style="text-transform: uppercase;" value="PB060600">
             </div>
 
-            <!-- Combobox chọn nhân viên (nằm giữa Mã KH và Ghi chú) -->
-            <div class="form-group">
-                <label for="employeeSelect">Nhân viên thực hiện:</label>
-                <select id="employeeSelect" onchange="onEmployeeChange()">
-                    <option value="">-- Đang tải danh sách nhân viên... --</option>
-                </select>
-            </div>
+
 
             <div class="form-group">
                 <textarea id="locNote" placeholder="Nhập ghi chú thêm nếu có..."></textarea>
             </div>
-
+            
+            <div class="form-group">
+                <select id="employeeSelect" onchange="onEmployeeChange()">
+                    <option value="">-- Đang tải danh sách nhân viên... --</option>
+                </select>
+            </div>
+            
             <button class="btn-get" onclick="getLocation()">Lấy tọa độ vị trí treo công tơ</button>
 
             <div class="list-title">Danh sách vị trí công tơ: <span id="locationCount" style="color: #007bff;">(0)</span></div>
