@@ -1,6 +1,6 @@
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec"; // Thay bằng Exec Web App URL chuẩn[cite: 13]
 
-// Cấu hình mật khẩu xác thực khi sửa / xóa
+// Cấu hình mật khẩu xác thực khi sửa / xóa[cite: 13]
 const SECRET_PASSWORD = "Truyen&1978";
 
 let allLocations = [];
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchLocations();
 });
 
-// 0. Tải danh sách nhân viên từ Apps Script
+// 0. Tải danh sách nhân viên từ Apps Script[cite: 13]
 function fetchEmployees() {
   fetch(`${API_URL}?action=getEmployees`)
     .then(res => res.json())
@@ -67,7 +67,7 @@ function onEmployeeChange() {
   }
 }
 
-// 0.1 Tải danh sách công việc từ Apps Script
+// 0.1 Tải danh sách công việc từ Apps Script[cite: 13]
 function fetchJobs() {
   fetch(`${API_URL}?action=getJobs`)
     .then(res => res.json())
@@ -119,7 +119,7 @@ function onJobChange() {
   }
 }
 
-// 1. Tải danh sách từ Google Sheet
+// 1. Tải danh sách từ Google Sheet[cite: 13]
 function fetchLocations() {
   const loadingBox = document.getElementById("loadingBox");
   const listElement = document.getElementById("locationList");
@@ -133,7 +133,10 @@ function fetchLocations() {
       if (loadingBox) loadingBox.style.display = "none";
 
       if (res.status === "success") {
-        allLocations = res.data || [];
+        allLocations = (res.data || []).map(item => ({
+          ...item,
+          id: String(item.id).trim() // Ép kiểu id thành String
+        }));
         renderList(allLocations);
       } else {
         showToast("Lỗi tải danh sách: " + res.message, true);
@@ -146,7 +149,7 @@ function fetchLocations() {
     });
 }
 
-// 2. Lấy vị trí GPS và lưu thông tin
+// 2. Lấy vị trí GPS và lưu thông tin[cite: 13]
 function getLocation() {
   const locNameInput = document.getElementById("locName");
   const nameInput = locNameInput.value.trim().toUpperCase();
@@ -180,7 +183,7 @@ function getLocation() {
     return;
   }
 
-  const existingLoc = allLocations.find(item => item.name === nameInput);
+  const existingLoc = allLocations.find(item => item.ma_khang === nameInput);
   if (existingLoc) {
     showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
     const searchInput = document.getElementById("searchInput");
@@ -201,7 +204,7 @@ function getLocation() {
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const locData = {
-        id: Date.now(),
+        id: String(Date.now()),
         ma_khang: nameInput,
         ten_khang: "Đang kiểm tra...",
         ten_cviec: jobInput,
@@ -235,7 +238,7 @@ function getLocation() {
           renderList(allLocations);
           showToast("Đã lưu vị trí thành công!");
         } else {
-          allLocations = allLocations.filter(item => item.id !== locData.id);
+          allLocations = allLocations.filter(item => String(item.id) !== String(locData.id));
           renderList(allLocations);
           showToast("Lỗi: " + res.message, true);
         }
@@ -265,7 +268,7 @@ function getLocation() {
   );
 }
 
-// 3. Hiển thị danh sách
+// 3. Hiển thị danh sách[cite: 13]
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
   const countElement = document.getElementById("locationCount");
@@ -301,8 +304,8 @@ function renderList(locations) {
       <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
       
       <div class="action-bar">
-        <button class="btn-edit" onclick="openEditModal(${loc.id})">Sửa</button>
-        <button class="btn-delete" onclick="openConfirmModal(${loc.id})">Xóa</button>
+        <button class="btn-edit" onclick="openEditModal('${loc.id}')">Sửa</button>
+        <button class="btn-delete" onclick="openConfirmModal('${loc.id}')">Xóa</button>
       </div>
     `;
 
@@ -310,7 +313,7 @@ function renderList(locations) {
   });
 }
 
-// 4. Tìm kiếm
+// 4. Tìm kiếm[cite: 13]
 function filterLocations() {
   const query = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allLocations.filter(loc => 
@@ -324,9 +327,9 @@ function filterLocations() {
   renderList(filtered);
 }
 
-// 5. Mở/Đóng Modal Xóa
+// 5. Mở/Đóng Modal Xóa[cite: 13]
 function openConfirmModal(id) {
-  deleteTargetId = id;
+  deleteTargetId = String(id).trim();
   const passInput = document.getElementById("deletePasswordInput");
   if (passInput) passInput.value = "";
 
@@ -357,7 +360,7 @@ function executeDelete() {
   const id = deleteTargetId;
   closeConfirmModal();
 
-  allLocations = allLocations.filter(loc => loc.id !== id);
+  allLocations = allLocations.filter(loc => String(loc.id) !== String(id));
   renderList(allLocations);
   showToast("Đã xóa vị trí thành công!");
 
@@ -368,12 +371,16 @@ function executeDelete() {
   });
 }
 
-// 6. Mở/Đóng Modal Sửa
+// 6. Mở/Đóng Modal Sửa[cite: 13]
 function openEditModal(id) {
-  const loc = allLocations.find(item => item.id === id);
-  if (!loc) return;
+  const searchId = String(id).trim();
+  const loc = allLocations.find(item => String(item.id).trim() === searchId);
+  if (!loc) {
+    showToast("Không tìm thấy bản ghi cần sửa trong bộ nhớ local!", true);
+    return;
+  }
 
-  editTargetId = id;
+  editTargetId = searchId;
   document.getElementById("editNameInput").value = loc.ma_khang;
   document.getElementById("editEmployeeSelect").value = loc.ten_nvien || "";
   document.getElementById("editJobSelect").value = loc.ten_cviec || "";
@@ -387,12 +394,12 @@ function openEditModal(id) {
 }
 
 function closeEditModal() {
-  editTargetId = null;
   const modal = document.getElementById("editModal");
   if (modal) modal.style.display = "none";
+  // Tuyệt đối không xóa editTargetId ở đây để giữ ID cho bước xác nhận GPS
 }
 
-// Hàm mở Modal xác nhận GPS mới
+// Hàm mở Modal xác nhận GPS mới[cite: 13]
 function askGpsUpdate(onConfirm, onCancel) {
   const modal = document.getElementById("gpsConfirmModal");
   if (!modal) return;
@@ -411,7 +418,12 @@ function askGpsUpdate(onConfirm, onCancel) {
 }
 
 function saveEditLocation() {
-  if (!editTargetId) return;
+  if (!editTargetId) {
+    showToast("Không tìm thấy ID cần sửa!", true);
+    return;
+  }
+
+  const currentId = editTargetId; // Lưu biến cục bộ để phòng hờ rớt biến
 
   const inputPass = document.getElementById("editPasswordInput").value.trim();
   if (inputPass !== SECRET_PASSWORD) {
@@ -439,21 +451,22 @@ function saveEditLocation() {
     return;
   }
 
-  const duplicate = allLocations.find(item => item.ma_khang === newName && item.id !== editTargetId);
+  const duplicate = allLocations.find(item => item.ma_khang === newName && String(item.id) !== String(currentId));
   if (duplicate) {
     showToast(`Mã KH "${newName}" đã thuộc về bản ghi khác!`, true);
     return;
   }
 
-  // Đóng modal sửa thông tin trước
+  // Đóng modal sửa
   closeEditModal();
 
-  // Gọi Modal giao diện xanh/xám xác nhận GPS
+  // Gọi Modal xác nhận GPS
   askGpsUpdate(
-    // Bấm "Đồng ý" -> Lấy tọa độ GPS mới
+    // Bấm "Sửa luôn tọa độ"
     () => {
       if (!navigator.geolocation) {
         showToast("Thiết bị không hỗ trợ GPS!", true);
+        editTargetId = null;
         return;
       }
 
@@ -465,7 +478,7 @@ function saveEditLocation() {
           const newLng = position.coords.longitude;
           const newTime = new Date().toLocaleString("vi-VN");
 
-          const loc = allLocations.find(item => item.id === editTargetId);
+          const loc = allLocations.find(item => String(item.id) === String(currentId));
           if (loc) {
             loc.ma_khang = newName;
             loc.ten_nvien = newEmployee;
@@ -484,7 +497,7 @@ function saveEditLocation() {
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
               action: "EDIT",
-              id: editTargetId,
+              id: currentId,
               ma_khang: newName,
               ten_nvien: newEmployee,
               ten_cviec: newJob,           
@@ -493,7 +506,10 @@ function saveEditLocation() {
               lng: newLng,
               time: newTime
             })
-          }).then(res => res.json()).then(res => {
+          })
+          .then(res => res.json())
+          .then(res => {
+            editTargetId = null; // Đặt về null sau khi hoàn tất
             if (res.status === "success") {
               if (loc) loc.ten_khang = res.ten_khang;
               renderList(allLocations);
@@ -502,15 +518,19 @@ function saveEditLocation() {
               showToast("Lỗi: " + res.message, true);
               fetchLocations();
             }
-          });
+          })
+          .catch(err => { editTargetId = null; });
         },
-        (error) => { showToast("Không thể lấy tọa độ GPS mới!", true); },
+        (error) => { 
+          editTargetId = null;
+          showToast("Không thể lấy tọa độ GPS mới!", true); 
+        },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     },
-    // Bấm "Hủy" -> Chỉ cập nhật thông tin chữ, giữ nguyên GPS cũ
+    // Bấm "Giữ lại tọa độ"
     () => {
-      const loc = allLocations.find(item => item.id === editTargetId);
+      const loc = allLocations.find(item => String(item.id) === String(currentId));
       if (loc) {
         loc.ma_khang = newName;
         loc.ten_nvien = newEmployee;
@@ -526,13 +546,16 @@ function saveEditLocation() {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "EDIT",
-          id: editTargetId,
+          id: currentId,
           ma_khang: newName,
           ten_nvien: newEmployee,
           ten_cviec: newJob,        
           note: newNote
         })
-      }).then(res => res.json()).then(res => {
+      })
+      .then(res => res.json())
+      .then(res => {
+        editTargetId = null; // Đặt về null sau khi hoàn tất
         if (res.status === "success") {
           if (loc) loc.ten_khang = res.ten_khang;
           renderList(allLocations);
@@ -541,12 +564,13 @@ function saveEditLocation() {
           showToast("Lỗi: " + res.message, true);
           fetchLocations();
         }
-      });
+      })
+      .catch(err => { editTargetId = null; });
     }
   );
 }
 
-// 7. Toast thông báo
+// 7. Toast thông báo[cite: 13]
 function showToast(message, isWarning = false) {
   const container = document.getElementById("toast-container");
   if (!container) return;
