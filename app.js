@@ -1,12 +1,11 @@
-// URL Web App Apps Script của bác
 const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
 
 let allLocations = [];
+let deleteTargetId = null;
 
-// Khởi chạy khi tải trang
 document.addEventListener("DOMContentLoaded", fetchLocations);
 
-// 1. Tải danh sách vị trí từ Google Sheet (Có hiệu ứng Loading)
+// 1. Tải danh sách từ Google Sheet
 function fetchLocations() {
   const loadingBox = document.getElementById("loadingBox");
   const listElement = document.getElementById("locationList");
@@ -33,7 +32,7 @@ function fetchLocations() {
     });
 }
 
-// 2. Lấy vị trí GPS hiện tại (Bắt buộc nhập Mã KH đủ 13 ký tự)
+// 2. Lấy vị trí GPS
 function getLocation() {
   const locNameInput = document.getElementById("locName");
   const nameInput = locNameInput.value.trim().toUpperCase();
@@ -67,17 +66,14 @@ function getLocation() {
         time: new Date().toLocaleString("vi-VN")
       };
 
-      // Cập nhật lên giao diện ngay lập tức
       allLocations.unshift(locData);
       renderList(allLocations);
 
-      // Xóa trắng ô nhập liệu
       locNameInput.value = "";
       document.getElementById("locNote").value = "";
 
       showToast("Đã lấy vị trí thành công!");
 
-      // Gửi ngầm dữ liệu lên Google Sheet
       fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -104,13 +100,12 @@ function getLocation() {
   );
 }
 
-// 3. Hiển thị danh sách ra giao diện & Cập nhật số lượng
+// 3. Hiển thị danh sách
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
   const countElement = document.getElementById("locationCount");
   listElement.innerHTML = "";
 
-  // Đếm số lượng
   if (countElement) {
     if (locations.length === allLocations.length) {
       countElement.innerText = `(${locations.length})`;
@@ -143,7 +138,7 @@ function renderList(locations) {
       
       <div class="action-bar">
         <button class="btn-edit" onclick="editLocation(${loc.id})">Sửa</button>
-        <button class="btn-delete" onclick="deleteLocation(${loc.id})">Xóa</button>
+        <button class="btn-delete" onclick="openConfirmModal(${loc.id})">Xóa</button>
       </div>
     `;
 
@@ -151,7 +146,7 @@ function renderList(locations) {
   });
 }
 
-// 4. Tìm kiếm vị trí
+// 4. Tìm kiếm
 function filterLocations() {
   const query = document.getElementById("searchInput").value.toLowerCase();
   const filtered = allLocations.filter(loc => 
@@ -162,9 +157,33 @@ function filterLocations() {
   renderList(filtered);
 }
 
-// 5. Xóa vị trí
-function deleteLocation(id) {
-  if (!confirm("Bạn có chắc chắn muốn xóa vị trí này?")) return;
+// 5. Mở Popup Modal xác nhận Xóa
+function openConfirmModal(id) {
+  deleteTargetId = id;
+  const modal = document.getElementById("confirmModal");
+  if (modal) modal.style.display = "flex";
+
+  const btnConfirm = document.getElementById("btnConfirmDelete");
+  if (btnConfirm) {
+    btnConfirm.onclick = () => {
+      executeDelete();
+    };
+  }
+}
+
+// 6. Đóng Modal
+function closeConfirmModal() {
+  deleteTargetId = null;
+  const modal = document.getElementById("confirmModal");
+  if (modal) modal.style.display = "none";
+}
+
+// 7. Thực thi Xóa
+function executeDelete() {
+  if (!deleteTargetId) return;
+
+  const id = deleteTargetId;
+  closeConfirmModal();
 
   allLocations = allLocations.filter(loc => loc.id !== id);
   renderList(allLocations);
@@ -177,7 +196,7 @@ function deleteLocation(id) {
   });
 }
 
-// 6. Sửa vị trí
+// 8. Sửa vị trí
 function editLocation(id) {
   const loc = allLocations.find(item => item.id === id);
   if (!loc) return;
@@ -205,7 +224,7 @@ function editLocation(id) {
   });
 }
 
-// 7. Hàm hiển thị Toast thông báo (màu xanh, góc phải, 5s tự tắt)
+// 9. Toast thông báo
 function showToast(message) {
   const container = document.getElementById("toast-container");
   if (!container) return;
