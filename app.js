@@ -6,6 +6,7 @@ let allLocations = [];
 document.addEventListener("DOMContentLoaded", fetchLocations);
 
 // 1. Lấy vị trí GPS và gửi lên Apps Script
+// 1. Lấy vị trí GPS và cập nhật giao diện TỨC THÌ
 function getLocation() {
   const nameInput = document.getElementById("locName").value.trim();
   const noteInput = document.getElementById("locNote").value.trim();
@@ -20,8 +21,6 @@ function getLocation() {
     return;
   }
 
-  alert("Đang lấy tọa độ GPS, vui lòng đợi...");
-
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const locData = {
@@ -33,33 +32,35 @@ function getLocation() {
         time: new Date().toLocaleString("vi-VN")
       };
 
-      // Gửi dữ liệu bằng text/plain để tránh vướng CORS preflight
-fetch(API_URL, {
-  method: "POST",
-  headers: { "Content-Type": "text/plain;charset=utf-8" }, // Bắt buộc dùng text/plain
-  body: JSON.stringify({
-    action: "ADD",
-    location: locData
-  })
-})
+      // TỐI ƯU: Thêm ngay vào danh sách hiển thị trên màn hình (không cần chờ server)
+      allLocations.unshift(locData);
+      renderList(allLocations);
+
+      // Reset ô nhập liệu ngay lập tức
+      document.getElementById("locName").value = "";
+      document.getElementById("locNote").value = "";
+
+      // Gửi ngầm dữ liệu lên Google Sheet ở nền
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "ADD",
+          location: locData
+        })
+      })
       .then(res => res.json())
       .then(res => {
-        if (res.status === "success") {
-          alert("Lưu vị trí thành công!");
-          document.getElementById("locName").value = "";
-          document.getElementById("locNote").value = "";
-          fetchLocations();
-        } else {
-          alert("Lỗi từ Google Sheet: " + res.message);
+        if (res.status !== "success") {
+          alert("Lỗi lưu ngầm lên Google Sheet: " + res.message);
         }
       })
       .catch(err => {
-        console.error(err);
-        alert("Lỗi kết nối khi lưu dữ liệu!");
+        console.error("Lỗi gửi dữ liệu ngầm:", err);
       });
     },
     (error) => {
-      alert("Không thể lấy vị trí GPS! Hãy kiểm tra quyền truy cập vị trí trên trình duyệt.");
+      alert("Không thể lấy vị trí GPS! Hãy kiểm tra quyền vị trí trên điện thoại.");
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
