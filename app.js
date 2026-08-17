@@ -36,7 +36,7 @@ function fetchLocations() {
     });
 }
 
-// 2. Lấy vị trí GPS (Kiểm tra trùng Mã KH)
+// 2. Lấy vị trí GPS (Bắt buộc bật định vị GPS mới tiến hành lưu)
 function getLocation() {
   const locNameInput = document.getElementById("locName");
   const nameInput = locNameInput.value.trim().toUpperCase();
@@ -67,13 +67,17 @@ function getLocation() {
     return;
   }
 
+  // Kiểm tra trình duyệt có hỗ trợ Geolocation không
   if (!navigator.geolocation) {
-    showToast("Trình duyệt không hỗ trợ định vị GPS!", true);
+    showToast("Thiết bị hoặc trình duyệt không hỗ trợ định vị GPS!", true);
     return;
   }
 
+  showToast("Đang truy xuất vị trí GPS, vui lòng chờ...");
+
   navigator.geolocation.getCurrentPosition(
     (position) => {
+      // Chỉ khi lấy được tọa độ thành công mới đóng gói và lưu dữ liệu
       const locData = {
         id: Date.now(),
         name: nameInput,
@@ -89,7 +93,7 @@ function getLocation() {
       locNameInput.value = "PB060600";
       document.getElementById("locNote").value = "";
 
-      showToast("Đã lấy vị trí thành công!");
+      showToast("Đã lấy vị trí và lưu thành công!");
 
       fetch(API_URL, {
         method: "POST",
@@ -111,7 +115,21 @@ function getLocation() {
       });
     },
     (error) => {
-      showToast("Không thể lấy vị trí GPS! Hãy kiểm tra quyền vị trí trên điện thoại.", true);
+      // Xử lý các trường hợp không bật GPS hoặc không cấp quyền
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          showToast("Lỗi: Bạn đã từ chối quyền vị trí! Hãy cấp quyền GPS cho trình duyệt.", true);
+          break;
+        case error.POSITION_UNAVAILABLE:
+          showToast("Lỗi: Bắt buộc phải MỞ ĐỊNH VỊ (GPS) trên điện thoại mới có thể lưu!", true);
+          break;
+        case error.TIMEOUT:
+          showToast("Lỗi: Quá thời gian lấy vị trí! Hãy bật GPS và thử lại.", true);
+          break;
+        default:
+          showToast("Lỗi: Không thể lấy vị trí! Vui lòng kiểm tra lại GPS trên điện thoại.", true);
+          break;
+      }
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
