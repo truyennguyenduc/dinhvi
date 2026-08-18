@@ -343,7 +343,7 @@ function renderList(locations) {
       <div class="coords">📍 Tọa độ: ${loc.lat}, ${loc.lng}</div>
       <div class="maps-row">
         <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
-        <span class="time">🕒 ${loc.time}</span>
+        <!--span class="time">🕒 ${loc.time}</span-->
       </div>
       
       <div class="action-bar">
