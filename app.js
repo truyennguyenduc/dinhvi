@@ -9,11 +9,39 @@ let editTargetId = null;
 document.addEventListener("DOMContentLoaded", () => {
   fetchEmployees();
   fetchJobs();
-  restoreSearchValue(); // YÊU CẦU 2: Khôi phục từ khóa tìm kiếm khi load lại trang
+  restoreSearchValue(); // Khôi phục từ khóa tìm kiếm khi load lại trang
   fetchLocations();
 });
 
-// YÊU CẦU 3: Tải danh sách Nhân viên kèm Mật khẩu từ Sheet nhan_vien
+// Hàm chuyển đổi chuỗi thời gian (ví dụ: "14:30:00 18/08/2026" hoặc ISO) sang milliseconds để sắp xếp
+function parseTimeString(timeStr) {
+  if (!timeStr) return 0;
+  
+  const str = String(timeStr).trim();
+  const parts = str.split(/[\s,]+/);
+  
+  if (parts.length >= 2) {
+    const datePart = parts.find(p => p.includes("/"));
+    const timePart = parts.find(p => p.includes(":"));
+    
+    if (datePart && timePart) {
+      const dSegments = datePart.split("/").map(Number);
+      const tSegments = timePart.split(":").map(Number);
+      if (dSegments.length === 3) {
+        const [day, month, year] = dSegments;
+        const hours = tSegments[0] || 0;
+        const minutes = tSegments[1] || 0;
+        const seconds = tSegments[2] || 0;
+        return new Date(year, month - 1, day, hours, minutes, seconds).getTime();
+      }
+    }
+  }
+
+  const parsed = Date.parse(str);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+// Tải danh sách Nhân viên kèm Mật khẩu từ Sheet nhan_vien
 function fetchEmployees() {
   fetch(`${API_URL}?action=getEmployees`)
     .then(res => res.json())
@@ -67,7 +95,7 @@ function onEmployeeChange() {
   }
 }
 
-// YÊU CẦU 3: Lấy mật khẩu tương ứng của Nhân viên đang chọn trên Combobox
+// Lấy mật khẩu tương ứng của Nhân viên đang chọn trên Combobox
 function getCurrentEmployeePassword() {
   const selectMain = document.getElementById("employeeSelect");
   const currentEmpName = selectMain ? selectMain.value : "";
@@ -78,7 +106,7 @@ function getCurrentEmployeePassword() {
   return empObj ? empObj.mat_khau : null;
 }
 
-// 0.1 Tải danh sách công việc
+// Tải danh sách công việc
 function fetchJobs() {
   fetch(`${API_URL}?action=getJobs`)
     .then(res => res.json())
@@ -130,7 +158,7 @@ function onJobChange() {
   }
 }
 
-// 1. Tải danh sách vị trí từ Sheet
+// 1. Tải danh sách vị trí từ Sheet (Đã tích hợp sắp xếp time DESC)
 function fetchLocations() {
   const loadingBox = document.getElementById("loadingBox");
   const listElement = document.getElementById("locationList");
@@ -148,6 +176,10 @@ function fetchLocations() {
           ...item,
           id: String(item.id).trim()
         }));
+
+        // Sắp xếp giảm dần theo thời gian (time desc)
+        allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
+
         filterLocations(); // Gọi filter để giữ nguyên kết quả tìm kiếm đã lưu
       } else {
         showToast("Lỗi tải danh sách: " + res.message, true);
@@ -194,7 +226,7 @@ function getLocation() {
     return;
   }
 
-  // YÊU CẦU 4: Chỉ kiểm tra trùng với các bản ghi đang có trang_thai = 1
+  // Chỉ kiểm tra trùng với các bản ghi đang có trang_thai = 1
   const existingLoc = allLocations.find(item => item.ma_khang === nameInput && (item.trang_thai === undefined || Number(item.trang_thai) === 1));
   if (existingLoc) {
     showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
@@ -243,6 +275,9 @@ function getLocation() {
         if (res.status === "success") {
           locData.ten_khang = res.ten_khang;
           allLocations.unshift(locData);
+          
+          // Đảm bảo lại thứ tự time DESC khi có phần tử mới
+          allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
           filterLocations();
 
           locNameInput.value = "PB060600";
@@ -325,7 +360,7 @@ function renderList(locations) {
   });
 }
 
-// YÊU CẦU 2: Ghi nhớ và tìm kiếm
+// Ghi nhớ và tìm kiếm
 function onSearchInput() {
   const searchInput = document.getElementById("searchInput");
   if (searchInput) {
@@ -354,6 +389,10 @@ function filterLocations() {
     (loc.note && loc.note.toLowerCase().includes(query)) ||
     `${loc.lat},${loc.lng}`.includes(query)
   );
+
+  // Sắp xếp giảm dần theo thời gian (time desc)
+  filtered.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
+
   renderList(filtered);
 }
 
@@ -378,7 +417,7 @@ function closeConfirmModal() {
   if (modal) modal.style.display = "none";
 }
 
-// YÊU CẦU 3: Xác thực mật khẩu khi xóa theo Nhân viên đang chọn trên Combobox
+// Xác thực mật khẩu khi xóa theo Nhân viên đang chọn trên Combobox
 function executeDelete() {
   if (!deleteTargetId) return;
 
@@ -462,7 +501,7 @@ function askGpsUpdate(onConfirm, onCancel) {
   };
 }
 
-// YÊU CẦU 3: Xác thực mật khẩu khi sửa theo Nhân viên đang chọn trên Combobox
+// Xác thực mật khẩu khi sửa theo Nhân viên đang chọn trên Combobox
 function saveEditLocation() {
   if (!editTargetId) {
     showToast("Không tìm thấy ID cần sửa!", true);
@@ -569,6 +608,8 @@ function saveEditLocation() {
                 loc.lng = newLng;
                 loc.time = newTime;
               }
+              
+              allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
               filterLocations();
               showToast("Cập nhật thành công!");
             } else {
@@ -613,6 +654,8 @@ function saveEditLocation() {
             loc.ten_cviec = newJob;      
             loc.note = newNote;
           }
+          
+          allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
           filterLocations();
           showToast("Cập nhật thành công!");
         } else {
