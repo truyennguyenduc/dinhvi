@@ -309,9 +309,11 @@ function renderList(locations) {
       <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
       <div class="loc-employee">👤 NV lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"} (${loc.ten_cviec ? loc.ten_cviec : "Chưa cập nhật"})</div>
       <div class="loc-note">Ghi chú: ${loc.note ? loc.note : "Không có ghi chú"}</div>
-      <span class="time">🕒 ${loc.time}</span>
       <div class="coords">📍 Tọa độ: ${loc.lat}, ${loc.lng}</div>
-      <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
+      <div class="maps-row">
+        <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
+        <span class="time">🕒 ${loc.time}</span>
+      </div>
       
       <div class="action-bar">
         <button class="btn-edit" onclick="openEditModal('${loc.id}')">Sửa</button>
