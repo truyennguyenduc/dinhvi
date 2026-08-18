@@ -194,7 +194,8 @@ function getLocation() {
     return;
   }
 
-  const existingLoc = allLocations.find(item => item.ma_khang === nameInput);
+  // YÊU CẦU 4: Chỉ kiểm tra trùng với các bản ghi đang có trang_thai = 1
+  const existingLoc = allLocations.find(item => item.ma_khang === nameInput && (item.trang_thai === undefined || Number(item.trang_thai) === 1));
   if (existingLoc) {
     showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
     const searchInput = document.getElementById("searchInput");
@@ -223,7 +224,8 @@ function getLocation() {
         note: noteInput,
         lat: position.coords.latitude,
         lng: position.coords.longitude,
-        time: new Date().toLocaleString("vi-VN")
+        time: new Date().toLocaleString("vi-VN"),
+        trang_thai: 1
       };
 
       showToast("Đang kiểm tra danh mục và lưu vị trí...");
@@ -238,7 +240,6 @@ function getLocation() {
       })
       .then(res => res.json())
       .then(res => {
-        // YÊU CẦU 1: Nếu backend báo lỗi (ví dụ không tìm thấy KH) -> Không lưu vào giao diện
         if (res.status === "success") {
           locData.ten_khang = res.ten_khang;
           allLocations.unshift(locData);
