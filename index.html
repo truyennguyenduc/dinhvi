@@ -33,7 +33,6 @@
 
         .form-group { margin-bottom: 0px; }
 
-        /* Khối hiển thị 2 combobox nằm ngang tỷ lệ 40/60 */
         .form-row {
             margin-bottom: 0px;
             display: flex;
@@ -302,7 +301,8 @@
             <div class="list-title">Danh sách vị trí công tơ: <span id="locationCount" style="color: #007bff;">(0)</span></div>
 
             <div class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Nhập gần đúng MKH, nhân viên, công việc, ghi chú..." oninput="filterLocations()">
+                <!-- YÊU CẦU 2: Ghi nhớ giá trị tìm kiếm khi gõ -->
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Nhập gần đúng MKH, nhân viên, công việc, ghi chú..." oninput="onSearchInput()">
             </div>
         </div>
 
