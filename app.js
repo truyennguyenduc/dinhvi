@@ -1,10 +1,7 @@
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec"; // Thay bằng Exec Web App URL chuẩn[cite: 13]
-
-// Cấu hình mật khẩu xác thực khi sửa / xóa[cite: 13]
-const SECRET_PASSWORD = "Truyen&1978";
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec"; 
 
 let allLocations = [];
-let employeesList = [];
+let employeesList = []; // Mảng object chứa [{ten_nvien, mat_khau}]
 let jobsList = [];
 let deleteTargetId = null;
 let editTargetId = null;
@@ -12,10 +9,11 @@ let editTargetId = null;
 document.addEventListener("DOMContentLoaded", () => {
   fetchEmployees();
   fetchJobs();
+  restoreSearchValue(); // YÊU CẦU 2: Khôi phục từ khóa tìm kiếm khi load lại trang
   fetchLocations();
 });
 
-// 0. Tải danh sách nhân viên từ Apps Script[cite: 13]
+// YÊU CẦU 3: Tải danh sách Nhân viên kèm Mật khẩu từ Sheet nhan_vien
 function fetchEmployees() {
   fetch(`${API_URL}?action=getEmployees`)
     .then(res => res.json())
@@ -23,9 +21,12 @@ function fetchEmployees() {
       if (res.status === "success" && Array.isArray(res.data)) {
         employeesList = res.data.map(item => {
           if (typeof item === 'object' && item !== null) {
-            return item.ten_nvien || item.name || Object.values(item)[0] || "";
+            return {
+              ten_nvien: item.ten_nvien || Object.values(item)[0] || "",
+              mat_khau: String(item.mat_khau !== undefined ? item.mat_khau : "").trim()
+            };
           }
-          return item;
+          return { ten_nvien: String(item).trim(), mat_khau: "" };
         });
       } else {
         employeesList = [];
@@ -45,9 +46,8 @@ function populateEmployeeDropdowns() {
 
   let optionsHTML = '<option value="">Chọn nhân viên</option>';
   employeesList.forEach(emp => {
-    let empText = (typeof emp === 'object' && emp !== null) ? (emp.ten_nvien || Object.values(emp)[0]) : emp;
-    if (empText) {
-      optionsHTML += `<option value="${empText}">${empText}</option>`;
+    if (emp.ten_nvien) {
+      optionsHTML += `<option value="${emp.ten_nvien}">${emp.ten_nvien}</option>`;
     }
   });
 
@@ -67,7 +67,18 @@ function onEmployeeChange() {
   }
 }
 
-// 0.1 Tải danh sách công việc từ Apps Script[cite: 13]
+// YÊU CẦU 3: Lấy mật khẩu tương ứng của Nhân viên đang chọn trên Combobox
+function getCurrentEmployeePassword() {
+  const selectMain = document.getElementById("employeeSelect");
+  const currentEmpName = selectMain ? selectMain.value : "";
+
+  if (!currentEmpName) return null;
+
+  const empObj = employeesList.find(emp => emp.ten_nvien === currentEmpName);
+  return empObj ? empObj.mat_khau : null;
+}
+
+// 0.1 Tải danh sách công việc
 function fetchJobs() {
   fetch(`${API_URL}?action=getJobs`)
     .then(res => res.json())
@@ -119,7 +130,7 @@ function onJobChange() {
   }
 }
 
-// 1. Tải danh sách từ Google Sheet[cite: 13]
+// 1. Tải danh sách vị trí từ Sheet
 function fetchLocations() {
   const loadingBox = document.getElementById("loadingBox");
   const listElement = document.getElementById("locationList");
@@ -135,9 +146,9 @@ function fetchLocations() {
       if (res.status === "success") {
         allLocations = (res.data || []).map(item => ({
           ...item,
-          id: String(item.id).trim() // Ép kiểu id thành String
+          id: String(item.id).trim()
         }));
-        renderList(allLocations);
+        filterLocations(); // Gọi filter để giữ nguyên kết quả tìm kiếm đã lưu
       } else {
         showToast("Lỗi tải danh sách: " + res.message, true);
       }
@@ -149,7 +160,7 @@ function fetchLocations() {
     });
 }
 
-// 2. Lấy vị trí GPS và lưu thông tin[cite: 13]
+// 2. Lấy vị trí GPS và lưu thông tin
 function getLocation() {
   const locNameInput = document.getElementById("locName");
   const nameInput = locNameInput.value.trim().toUpperCase();
@@ -189,7 +200,7 @@ function getLocation() {
     const searchInput = document.getElementById("searchInput");
     if (searchInput) {
       searchInput.value = nameInput;
-      filterLocations();
+      onSearchInput();
     }
     return;
   }
@@ -215,12 +226,6 @@ function getLocation() {
         time: new Date().toLocaleString("vi-VN")
       };
 
-      allLocations.unshift(locData);
-      renderList(allLocations);
-
-      locNameInput.value = "PB060600";
-      document.getElementById("locNote").value = "";
-
       showToast("Đang kiểm tra danh mục và lưu vị trí...");
 
       fetch(API_URL, {
@@ -233,13 +238,17 @@ function getLocation() {
       })
       .then(res => res.json())
       .then(res => {
+        // YÊU CẦU 1: Nếu backend báo lỗi (ví dụ không tìm thấy KH) -> Không lưu vào giao diện
         if (res.status === "success") {
           locData.ten_khang = res.ten_khang;
-          renderList(allLocations);
+          allLocations.unshift(locData);
+          filterLocations();
+
+          locNameInput.value = "PB060600";
+          document.getElementById("locNote").value = "";
+
           showToast("Đã lưu vị trí thành công!");
         } else {
-          allLocations = allLocations.filter(item => String(item.id) !== String(locData.id));
-          renderList(allLocations);
           showToast("Lỗi: " + res.message, true);
         }
       })
@@ -268,7 +277,7 @@ function getLocation() {
   );
 }
 
-// 3. Hiển thị danh sách[cite: 13]
+// 3. Hiển thị danh sách
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
   const countElement = document.getElementById("locationCount");
@@ -313,9 +322,27 @@ function renderList(locations) {
   });
 }
 
-// 4. Tìm kiếm[cite: 13]
+// YÊU CẦU 2: Ghi nhớ và tìm kiếm
+function onSearchInput() {
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    localStorage.setItem("search_value", searchInput.value);
+  }
+  filterLocations();
+}
+
+function restoreSearchValue() {
+  const savedSearch = localStorage.getItem("search_value");
+  const searchInput = document.getElementById("searchInput");
+  if (savedSearch !== null && searchInput) {
+    searchInput.value = savedSearch;
+  }
+}
+
 function filterLocations() {
-  const query = document.getElementById("searchInput").value.toLowerCase();
+  const searchInput = document.getElementById("searchInput");
+  const query = searchInput ? searchInput.value.toLowerCase() : "";
+  
   const filtered = allLocations.filter(loc => 
     loc.ma_khang.toLowerCase().includes(query) ||
     (loc.ten_khang && loc.ten_khang.toLowerCase().includes(query)) ||
@@ -327,7 +354,7 @@ function filterLocations() {
   renderList(filtered);
 }
 
-// 5. Mở/Đóng Modal Xóa[cite: 13]
+// 5. Mở/Đóng Modal Xóa
 function openConfirmModal(id) {
   deleteTargetId = String(id).trim();
   const passInput = document.getElementById("deletePasswordInput");
@@ -348,12 +375,28 @@ function closeConfirmModal() {
   if (modal) modal.style.display = "none";
 }
 
+// YÊU CẦU 3: Xác thực mật khẩu khi xóa theo Nhân viên đang chọn trên Combobox
 function executeDelete() {
   if (!deleteTargetId) return;
 
+  const selectMain = document.getElementById("employeeSelect");
+  const currentEmpName = selectMain ? selectMain.value : "";
+
+  if (!currentEmpName) {
+    showToast("Vui lòng chọn Nhân viên ở combobox phía trên trước khi thực hiện!", true);
+    return;
+  }
+
+  const correctPassword = getCurrentEmployeePassword();
   const inputPass = document.getElementById("deletePasswordInput").value.trim();
-  if (inputPass !== SECRET_PASSWORD) {
-    showToast("Mật khẩu xác nhận không đúng!", true);
+
+  if (correctPassword === null || correctPassword === "") {
+    showToast("Không tìm thấy thông tin mật khẩu của nhân viên: " + currentEmpName, true);
+    return;
+  }
+
+  if (inputPass !== correctPassword) {
+    showToast(`Mật khẩu xác nhận không đúng với nhân viên "${currentEmpName}"!`, true);
     return;
   }
 
@@ -361,7 +404,7 @@ function executeDelete() {
   closeConfirmModal();
 
   allLocations = allLocations.filter(loc => String(loc.id) !== String(id));
-  renderList(allLocations);
+  filterLocations();
   showToast("Đã xóa vị trí thành công!");
 
   fetch(API_URL, {
@@ -371,7 +414,7 @@ function executeDelete() {
   });
 }
 
-// 6. Mở/Đóng Modal Sửa[cite: 13]
+// 6. Mở/Đóng Modal Sửa
 function openEditModal(id) {
   const searchId = String(id).trim();
   const loc = allLocations.find(item => String(item.id).trim() === searchId);
@@ -396,10 +439,9 @@ function openEditModal(id) {
 function closeEditModal() {
   const modal = document.getElementById("editModal");
   if (modal) modal.style.display = "none";
-  // Tuyệt đối không xóa editTargetId ở đây để giữ ID cho bước xác nhận GPS
 }
 
-// Hàm mở Modal xác nhận GPS mới[cite: 13]
+// Modal xác nhận GPS mới
 function askGpsUpdate(onConfirm, onCancel) {
   const modal = document.getElementById("gpsConfirmModal");
   if (!modal) return;
@@ -417,19 +459,35 @@ function askGpsUpdate(onConfirm, onCancel) {
   };
 }
 
+// YÊU CẦU 3: Xác thực mật khẩu khi sửa theo Nhân viên đang chọn trên Combobox
 function saveEditLocation() {
   if (!editTargetId) {
     showToast("Không tìm thấy ID cần sửa!", true);
     return;
   }
 
-  const currentId = editTargetId; // Lưu biến cục bộ để phòng hờ rớt biến
+  const selectMain = document.getElementById("employeeSelect");
+  const currentEmpName = selectMain ? selectMain.value : "";
 
-  const inputPass = document.getElementById("editPasswordInput").value.trim();
-  if (inputPass !== SECRET_PASSWORD) {
-    showToast("Mật khẩu xác nhận không đúng!", true);
+  if (!currentEmpName) {
+    showToast("Vui lòng chọn Nhân viên ở combobox phía trên trước khi thực hiện!", true);
     return;
   }
+
+  const correctPassword = getCurrentEmployeePassword();
+  const inputPass = document.getElementById("editPasswordInput").value.trim();
+
+  if (correctPassword === null || correctPassword === "") {
+    showToast("Không tìm thấy thông tin mật khẩu của nhân viên: " + currentEmpName, true);
+    return;
+  }
+
+  if (inputPass !== correctPassword) {
+    showToast(`Mật khẩu xác nhận không đúng với nhân viên "${currentEmpName}"!`, true);
+    return;
+  }
+
+  const currentId = editTargetId;
 
   const newName = document.getElementById("editNameInput").value.trim().toUpperCase();
   const newJob = document.getElementById("editJobSelect").value;
@@ -457,12 +515,10 @@ function saveEditLocation() {
     return;
   }
 
-  // Đóng modal sửa
   closeEditModal();
 
-  // Gọi Modal xác nhận GPS
   askGpsUpdate(
-    // Bấm "Sửa luôn tọa độ"
+    // Chọn "Sửa luôn tọa độ"
     () => {
       if (!navigator.geolocation) {
         showToast("Thiết bị không hỗ trợ GPS!", true);
@@ -478,18 +534,6 @@ function saveEditLocation() {
           const newLng = position.coords.longitude;
           const newTime = new Date().toLocaleString("vi-VN");
 
-          const loc = allLocations.find(item => String(item.id) === String(currentId));
-          if (loc) {
-            loc.ma_khang = newName;
-            loc.ten_nvien = newEmployee;
-            loc.ten_cviec = newJob;          
-            loc.note = newNote;
-            loc.lat = newLat;
-            loc.lng = newLng;
-            loc.time = newTime;
-          }
-
-          renderList(allLocations);
           showToast("Đang cập nhật...");
 
           fetch(API_URL, {
@@ -509,10 +553,20 @@ function saveEditLocation() {
           })
           .then(res => res.json())
           .then(res => {
-            editTargetId = null; // Đặt về null sau khi hoàn tất
+            editTargetId = null;
             if (res.status === "success") {
-              if (loc) loc.ten_khang = res.ten_khang;
-              renderList(allLocations);
+              const loc = allLocations.find(item => String(item.id) === String(currentId));
+              if (loc) {
+                loc.ma_khang = newName;
+                loc.ten_khang = res.ten_khang;
+                loc.ten_nvien = newEmployee;
+                loc.ten_cviec = newJob;          
+                loc.note = newNote;
+                loc.lat = newLat;
+                loc.lng = newLng;
+                loc.time = newTime;
+              }
+              filterLocations();
               showToast("Cập nhật thành công!");
             } else {
               showToast("Lỗi: " + res.message, true);
@@ -528,17 +582,8 @@ function saveEditLocation() {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     },
-    // Bấm "Giữ lại tọa độ"
+    // Chọn "Giữ lại tọa độ"
     () => {
-      const loc = allLocations.find(item => String(item.id) === String(currentId));
-      if (loc) {
-        loc.ma_khang = newName;
-        loc.ten_nvien = newEmployee;
-        loc.ten_cviec = newJob;      
-        loc.note = newNote;
-      }
-
-      renderList(allLocations);
       showToast("Đang cập nhật...");
 
       fetch(API_URL, {
@@ -555,10 +600,17 @@ function saveEditLocation() {
       })
       .then(res => res.json())
       .then(res => {
-        editTargetId = null; // Đặt về null sau khi hoàn tất
+        editTargetId = null;
         if (res.status === "success") {
-          if (loc) loc.ten_khang = res.ten_khang;
-          renderList(allLocations);
+          const loc = allLocations.find(item => String(item.id) === String(currentId));
+          if (loc) {
+            loc.ma_khang = newName;
+            loc.ten_khang = res.ten_khang;
+            loc.ten_nvien = newEmployee;
+            loc.ten_cviec = newJob;      
+            loc.note = newNote;
+          }
+          filterLocations();
           showToast("Cập nhật thành công!");
         } else {
           showToast("Lỗi: " + res.message, true);
@@ -570,7 +622,7 @@ function saveEditLocation() {
   );
 }
 
-// 7. Toast thông báo[cite: 13]
+// 7. Toast thông báo
 function showToast(message, isWarning = false) {
   const container = document.getElementById("toast-container");
   if (!container) return;
