@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";[cite: 5]
 
 let allLocations = [];
 let employeesList = []; // Mảng object chứa [{ten_nvien, mat_khau}]
@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchLocations();
 });
 
-// Hàm chuyển đổi chuỗi thời gian (ví dụ: "14:30:00 18/08/2026" hoặc ISO) sang milliseconds để sắp xếp
+// Hàm chuyển đổi chuỗi thời gian sang milliseconds để sắp xếp
 function parseTimeString(timeStr) {
   if (!timeStr) return 0;
   
@@ -95,14 +95,12 @@ function onEmployeeChange() {
   }
 }
 
-// Lấy mật khẩu tương ứng của Nhân viên đang chọn trên Combobox
-function getCurrentEmployeePassword() {
-  const selectMain = document.getElementById("employeeSelect");
-  const currentEmpName = selectMain ? selectMain.value : "";
-
-  if (!currentEmpName) return null;
-
-  const empObj = employeesList.find(emp => emp.ten_nvien === currentEmpName);
+// Hàm lấy Mật khẩu tương ứng của Nhân viên theo Tên người tạo
+function getPasswordByEmployeeName(employeeName) {
+  if (!employeeName) return null;
+  const empObj = employeesList.find(
+    emp => String(emp.ten_nvien).trim().toLowerCase() === String(employeeName).trim().toLowerCase()
+  );
   return empObj ? empObj.mat_khau : null;
 }
 
@@ -158,7 +156,7 @@ function onJobChange() {
   }
 }
 
-// 1. Tải danh sách vị trí từ Sheet (Đã tích hợp sắp xếp time DESC)
+// 1. Tải danh sách vị trí từ Sheet
 function fetchLocations() {
   const loadingBox = document.getElementById("loadingBox");
   const listElement = document.getElementById("locationList");
@@ -180,7 +178,7 @@ function fetchLocations() {
         // Sắp xếp giảm dần theo thời gian (time desc)
         allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
 
-        filterLocations(); // Gọi filter để giữ nguyên kết quả tìm kiếm đã lưu
+        filterLocations();
       } else {
         showToast("Lỗi tải danh sách: " + res.message, true);
       }
@@ -226,7 +224,6 @@ function getLocation() {
     return;
   }
 
-  // Chỉ kiểm tra trùng với các bản ghi đang có trang_thai = 1
   const existingLoc = allLocations.find(item => item.ma_khang === nameInput && (item.trang_thai === undefined || Number(item.trang_thai) === 1));
   if (existingLoc) {
     showToast(`Mã KH "${nameInput}" đã tồn tại! Chọn khách hàng bên dưới để sửa.`, true);
@@ -276,7 +273,6 @@ function getLocation() {
           locData.ten_khang = res.ten_khang;
           allLocations.unshift(locData);
           
-          // Đảm bảo lại thứ tự time DESC khi có phần tử mới
           allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
           filterLocations();
 
@@ -390,7 +386,6 @@ function filterLocations() {
     `${loc.lat},${loc.lng}`.includes(query)
   );
 
-  // Sắp xếp giảm dần theo thời gian (time desc)
   filtered.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
 
   renderList(filtered);
@@ -417,28 +412,35 @@ function closeConfirmModal() {
   if (modal) modal.style.display = "none";
 }
 
-// Xác thực mật khẩu khi xóa theo Nhân viên đang chọn trên Combobox
+// Thực hiện xóa: Xác thực người nhập bản ghi & Mật khẩu tương ứng trong sheet nhan_vien
 function executeDelete() {
   if (!deleteTargetId) return;
 
-  const selectMain = document.getElementById("employeeSelect");
-  const currentEmpName = selectMain ? selectMain.value : "";
-
-  if (!currentEmpName) {
-    showToast("Vui lòng chọn Nhân viên ở combobox phía trên trước khi thực hiện!", true);
+  // Lấy chính xác bản ghi đang muốn xóa
+  const targetLoc = allLocations.find(item => String(item.id).trim() === String(deleteTargetId).trim());
+  if (!targetLoc) {
+    showToast("Không tìm thấy dữ liệu bản ghi cần xóa!", true);
     return;
   }
 
-  const correctPassword = getCurrentEmployeePassword();
+  // Lấy tên người đã tạo bản ghi này trong bảng dinh_vi
+  const creatorName = targetLoc.ten_nvien ? String(targetLoc.ten_nvien).trim() : "";
+  if (!creatorName) {
+    showToast("Bản ghi chưa có thông tin người nhập nên không thể xác thực!", true);
+    return;
+  }
+
+  // Lấy mật khẩu chính chủ từ danh sách nhan_vien
+  const correctPassword = getPasswordByEmployeeName(creatorName);
   const inputPass = document.getElementById("deletePasswordInput").value.trim();
 
-  if (correctPassword === null || correctPassword === "") {
-    showToast("Không tìm thấy thông tin mật khẩu của nhân viên: " + currentEmpName, true);
+  if (correctPassword === null) {
+    showToast(`Không tìm thấy mật khẩu của người nhập bản ghi: "${creatorName}"`, true);
     return;
   }
 
   if (inputPass !== correctPassword) {
-    showToast(`Mật khẩu xác nhận không đúng với nhân viên "${currentEmpName}"!`, true);
+    showToast(`Mật khẩu không đúng với nhân viên nhập bản ghi ("${creatorName}")!`, true);
     return;
   }
 
@@ -501,31 +503,38 @@ function askGpsUpdate(onConfirm, onCancel) {
   };
 }
 
-// Xác thực mật khẩu khi sửa theo Nhân viên đang chọn trên Combobox
+// Thực hiện sửa: Xác thực người nhập bản ghi & Mật khẩu tương ứng trong sheet nhan_vien
 function saveEditLocation() {
   if (!editTargetId) {
     showToast("Không tìm thấy ID cần sửa!", true);
     return;
   }
 
-  const selectMain = document.getElementById("employeeSelect");
-  const currentEmpName = selectMain ? selectMain.value : "";
-
-  if (!currentEmpName) {
-    showToast("Vui lòng chọn Nhân viên ở combobox phía trên trước khi thực hiện!", true);
+  // Lấy chính xác bản ghi đang muốn sửa
+  const targetLoc = allLocations.find(item => String(item.id).trim() === String(editTargetId).trim());
+  if (!targetLoc) {
+    showToast("Không tìm thấy dữ liệu gốc của bản ghi!", true);
     return;
   }
 
-  const correctPassword = getCurrentEmployeePassword();
+  // Lấy tên người đã tạo bản ghi này trong bảng dinh_vi
+  const creatorName = targetLoc.ten_nvien ? String(targetLoc.ten_nvien).trim() : "";
+  if (!creatorName) {
+    showToast("Bản ghi chưa có thông tin người nhập nên không thể xác thực!", true);
+    return;
+  }
+
+  // Lấy mật khẩu chính chủ từ danh sách nhan_vien
+  const correctPassword = getPasswordByEmployeeName(creatorName);
   const inputPass = document.getElementById("editPasswordInput").value.trim();
 
-  if (correctPassword === null || correctPassword === "") {
-    showToast("Không tìm thấy thông tin mật khẩu của nhân viên: " + currentEmpName, true);
+  if (correctPassword === null) {
+    showToast(`Không tìm thấy mật khẩu của người nhập bản ghi: "${creatorName}"`, true);
     return;
   }
 
   if (inputPass !== correctPassword) {
-    showToast(`Mật khẩu xác nhận không đúng với nhân viên "${currentEmpName}"!`, true);
+    showToast(`Mật khẩu không đúng với nhân viên nhập bản ghi ("${creatorName}")!`, true);
     return;
   }
 
