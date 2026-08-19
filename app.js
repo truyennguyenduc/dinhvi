@@ -228,7 +228,7 @@ function showToast(msg) {
   }, 5000);
 }
 
-// Thêm vị trí mới (Có tính năng lưu khi mất GPS)
+// Thêm vị trí mới (BẮT BUỘC CÓ TỌA ĐỘ MỚI CHO LƯU)
 function getLocation() {
   const searchType = document.getElementById("loai_tim").value;
   const searchValueInput = document.getElementById("locName").value.trim();
@@ -249,7 +249,7 @@ function getLocation() {
     return;
   }
 
-  showToast("Đang xử lý, vui lòng đợi...");
+  showToast("Đang lấy tọa độ, vui lòng đợi...");
 
   // Hàm nội bộ để gửi dữ liệu lưu lên Server
   const saveToServer = (lat, lng) => {
@@ -279,7 +279,7 @@ function getLocation() {
         allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
         filterLocations();
 
-        showToast(`Đã lưu: ${res.ma_khang} - ${res.ten_khang}`);
+        showToast(`Đã lưu vị trí: ${res.ma_khang} - ${res.ten_khang}`);
         document.getElementById("locName").value = searchType === 'MKH' ? 'PB060600' : '';
         document.getElementById("locNote").value = "";
       } else {
@@ -293,28 +293,20 @@ function getLocation() {
   };
 
   if (!navigator.geolocation) {
-    // Trình duyệt không có GPS luôn thì cho phép chọn lưu rỗng
-    if (confirm("Trình duyệt không hỗ trợ định vị. Bạn có muốn lưu dữ liệu KHÔNG kèm tọa độ không?")) {
-      saveToServer("", "");
-    } else {
-      showToast("Đã hủy thao tác.");
-    }
+    showToast("Lỗi: Trình duyệt của bạn không hỗ trợ định vị GPS!");
     return;
   }
 
-  // Gọi định vị GPS
+  // Gọi định vị GPS - ÉP BẮT BUỘC
   navigator.geolocation.getCurrentPosition(
     position => {
+      // Thành công lấy được tọa độ thì mới cho chạy hàm saveToServer
       saveToServer(position.coords.latitude, position.coords.longitude);
     },
     error => {
       console.error(error);
-      // Nếu quên bật GPS hoặc không bắt được sóng, hiện bảng cho phép lưu tiếp
-      if (confirm("Không thể lấy tọa độ (chưa bật vị trí hoặc khuất sóng). Bạn có muốn LƯU DỮ LIỆU KHÔNG CÓ TỌA ĐỘ không?")) {
-          saveToServer("", ""); 
-      } else {
-          showToast("Đã hủy thao tác lưu.");
-      }
+      // Thất bại (chưa bật GPS hoặc rớt mạng) -> Chặn đứng và báo lỗi nền đỏ
+      showToast("Lỗi: Vui lòng BẬT ĐỊNH VỊ (GPS) trên máy để lưu!");
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
   );
