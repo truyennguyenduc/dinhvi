@@ -1,4 +1,3 @@
-// URL của Web App sau khi Deploy từ Google Apps Script
 const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec"; 
 
 let allLocations = [];
@@ -58,17 +57,53 @@ function populateDropdown(id1, id2, dataArray, defaultText) {
   if (el2) el2.innerHTML = html;
 }
 
+// Cập nhật giao diện từ dữ liệu
+function applyInitData(res) {
+  populateDropdown("jobSelect", "editJobSelect", res.cong_viec || [], "Công việc");
+  populateDropdown("employeeSelect", "editEmployeeSelect", res.nhan_vien || [], "Chọn nhân viên");
+  
+  const savedJob = localStorage.getItem("cmis_jobSelect");
+  if (savedJob) document.getElementById("jobSelect").value = savedJob;
+  
+  const savedEmp = localStorage.getItem("cmis_employeeSelect");
+  if (savedEmp) document.getElementById("employeeSelect").value = savedEmp;
+
+  allLocations = res.locations || [];
+  filterLocations();
+}
+
+// Đồng bộ danh sách local xuống cache trình duyệt
+function syncLocalCache() {
+  const cachedData = localStorage.getItem("cmis_full_init_data");
+  if (cachedData) {
+    try {
+      let parsed = JSON.parse(cachedData);
+      parsed.locations = allLocations;
+      localStorage.setItem("cmis_full_init_data", JSON.stringify(parsed));
+    } catch(e) {}
+  }
+}
+
 function loadInitData() {
   const listElement = document.getElementById("locationList");
-  if(listElement) {
+
+  // 1. ĐỌC CACHE MÁY TÍNH/ĐIỆN THOẠI - HIỆN NGAY TRONG 0.001s
+  const cachedData = localStorage.getItem("cmis_full_init_data");
+  if (cachedData) {
+    try {
+      const parsed = JSON.parse(cachedData);
+      applyInitData(parsed);
+    } catch (e) { console.error(e); }
+  } else if (listElement) {
     listElement.innerHTML = `
       <li style="text-align: center; padding: 20px;">
         <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1kYXNoYXJyYXk9IjIzMCAxMDAiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDEwMCAxMDAiIHRvPSIzNjAgMTAwIDEwMCIgZHVyPSIxcyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiLz48L2NpcmNsZT48L3N2Zz4=" alt="loading" style="width: 30px; height: 30px; vertical-align: middle; margin-right: 10px;">
-        <span style="font-weight: bold; color: #007bff; vertical-align: middle; font-size: 15px;">Đang lấy danh sách...</span>
+        <span style="font-weight: bold; color: #007bff; vertical-align: middle; font-size: 15px;">Đang tải danh sách...</span>
       </li>
     `;
   }
 
+  // 2. GỌI SERVER CHẠY NGẦM ĐỂ CẬP NHẬT TRONG LẶNG LẼ
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -79,24 +114,15 @@ function loadInitData() {
   .then(text => JSON.parse(text))
   .then(res => {
     if (res.status === "success") {
-      populateDropdown("jobSelect", "editJobSelect", res.cong_viec, "Công việc");
-      populateDropdown("employeeSelect", "editEmployeeSelect", res.nhan_vien, "Chọn nhân viên");
-      
-      const savedJob = localStorage.getItem("cmis_jobSelect");
-      if (savedJob) document.getElementById("jobSelect").value = savedJob;
-      
-      const savedEmp = localStorage.getItem("cmis_employeeSelect");
-      if (savedEmp) document.getElementById("employeeSelect").value = savedEmp;
-
-      allLocations = res.locations || [];
-      filterLocations();
+      localStorage.setItem("cmis_full_init_data", JSON.stringify(res));
+      applyInitData(res);
     } else {
-      if(listElement) listElement.innerHTML = `<li>Lỗi: ${res.message}</li>`;
+      if(!cachedData && listElement) listElement.innerHTML = `<li>Lỗi: ${res.message}</li>`;
     }
   })
   .catch(err => {
     console.error(err);
-    if(listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ! Đang thử lại...</li>`;
+    if(!cachedData && listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ! Đang thử lại...</li>`;
   });
 }
 
@@ -334,6 +360,8 @@ function getLocation() {
         
         allLocations.unshift(locData);
         allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
+        
+        syncLocalCache();
         filterLocations();
 
         showToast(`Đã lưu vị trí: \n${res.ma_khang} - ${res.ten_khang}`);
@@ -435,6 +463,7 @@ function saveEditLocation() {
             loc.lat = lat; loc.lng = lng; loc.time = time;
           }
         }
+        syncLocalCache();
         filterLocations();
         closeEditModal();
         showToast("Cập nhật định vị thành công");
@@ -505,6 +534,7 @@ function deleteLocation() {
     if(btn) btn.disabled = false;
     if (res.status === "success") {
       allLocations = allLocations.filter(loc => String(loc.id) !== String(currentId));
+      syncLocalCache();
       filterLocations();
       closeConfirmModal();
       showToast("Xóa khách hàng thành công");
