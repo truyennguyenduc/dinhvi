@@ -177,7 +177,7 @@ function renderList(locations) {
     
     li.innerHTML = `
       <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
-      <div class="loc-job" style="color: #d9534f; font-weight: bold; font-size: 11px; margin-bottom: 4px;">
+      <div class="loc-job" style="color: #d9534f; font-weight: bold; font-size: 12px; margin-bottom: 4px;">
           🔢 CTơ: ${loc.so_cto ? loc.so_cto : "---"} | Trạm: ${loc.ma_tram ? loc.ma_tram : "---"} - ${loc.ten_tram ? loc.ten_tram : "---"} | Cột: ${loc.so_cot ? loc.so_cot : "---"}
       </div>
       <div class="loc-employee">👤 NV lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"} (${loc.ten_cviec ? loc.ten_cviec : "Chưa cập nhật"})</div>
