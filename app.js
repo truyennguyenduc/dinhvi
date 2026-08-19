@@ -6,29 +6,88 @@ let currentId = null;
 
 // Khởi chạy khi load trang
 document.addEventListener("DOMContentLoaded", () => {
-  loadLocations();
+  restoreLocalSettings(); // Phục hồi các giá trị đã lưu
+  loadInitData(); // Tải danh sách + dữ liệu combobox
   
-  // Sự kiện tìm kiếm realtime trên thanh search
-  const searchBox = document.getElementById("searchBox");
-  if(searchBox) {
-    searchBox.addEventListener("input", filterLocations);
+  // Bắt sự kiện tìm kiếm realtime trên thanh search
+  const searchInput = document.getElementById("searchInput");
+  if(searchInput) {
+    searchInput.addEventListener("input", () => {
+      saveLocalSettings();
+      filterLocations();
+    });
   }
+
+  // Bắt sự kiện thay đổi để lưu vào localStorage
+  ['loai_tim', 'jobSelect', 'employeeSelect'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', saveLocalSettings);
+  });
 });
 
-// Hàm lấy danh sách từ Google Sheets
-function loadLocations() {
+// Lưu lựa chọn vào bộ nhớ trình duyệt
+function saveLocalSettings() {
+  localStorage.setItem("cmis_loai_tim", document.getElementById("loai_tim")?.value || "MKH");
+  localStorage.setItem("cmis_jobSelect", document.getElementById("jobSelect")?.value || "");
+  localStorage.setItem("cmis_employeeSelect", document.getElementById("employeeSelect")?.value || "");
+  localStorage.setItem("cmis_searchInput", document.getElementById("searchInput")?.value || "");
+}
+
+// Phục hồi lựa chọn khi mở lại web
+function restoreLocalSettings() {
+  const loai_tim = localStorage.getItem("cmis_loai_tim");
+  if (loai_tim) {
+    const el = document.getElementById("loai_tim");
+    if(el) {
+      el.value = loai_tim;
+      el.dispatchEvent(new Event('change')); 
+    }
+  }
+  
+  const searchInput = localStorage.getItem("cmis_searchInput");
+  if (searchInput) {
+    const el = document.getElementById("searchInput");
+    if(el) el.value = searchInput;
+  }
+}
+
+// Đổ dữ liệu vào các thẻ Select
+function populateDropdown(id1, id2, dataArray, defaultText) {
+  let html = `<option value="">${defaultText}</option>`;
+  dataArray.forEach(item => {
+    html += `<option value="${item}">${item}</option>`;
+  });
+  const el1 = document.getElementById(id1);
+  const el2 = document.getElementById(id2);
+  if (el1) el1.innerHTML = html;
+  if (el2) el2.innerHTML = html;
+}
+
+// Hàm lấy toàn bộ dữ liệu từ Google Sheets
+function loadInitData() {
   const listElement = document.getElementById("locationList");
   if(listElement) listElement.innerHTML = "<li>Đang tải dữ liệu...</li>";
 
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "GET_LIST" })
+    body: JSON.stringify({ action: "GET_INIT_DATA" })
   })
   .then(res => res.json())
   .then(res => {
     if (res.status === "success") {
-      allLocations = res.data || [];
+      // Đổ dữ liệu vào combobox
+      populateDropdown("jobSelect", "editJobSelect", res.cong_viec, "Chọn công việc");
+      populateDropdown("employeeSelect", "editEmployeeSelect", res.nhan_vien, "Chọn nhân viên");
+      
+      // Phục hồi lựa chọn Select sau khi đã có option
+      const savedJob = localStorage.getItem("cmis_jobSelect");
+      if (savedJob) document.getElementById("jobSelect").value = savedJob;
+      
+      const savedEmp = localStorage.getItem("cmis_employeeSelect");
+      if (savedEmp) document.getElementById("employeeSelect").value = savedEmp;
+
+      allLocations = res.locations || [];
       filterLocations();
     } else {
       if(listElement) listElement.innerHTML = `<li>Lỗi: ${res.message}</li>`;
@@ -58,10 +117,10 @@ function parseTimeString(timeStr) {
   return isNaN(t) ? 0 : t;
 }
 
-// Lọc danh sách hiển thị
+// Lọc danh sách hiển thị (Áp dụng cho mọi giá trị nhập vào)
 function filterLocations() {
-  const searchBox = document.getElementById("searchBox");
-  const query = searchBox ? searchBox.value.toLowerCase().trim() : "";
+  const searchInput = document.getElementById("searchInput");
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
   
   if (!query) {
     renderList(allLocations);
@@ -72,7 +131,10 @@ function filterLocations() {
     const mk = (loc.ma_khang || "").toLowerCase();
     const tk = (loc.ten_khang || "").toLowerCase();
     const sct = (loc.so_cto || "").toLowerCase();
-    return mk.includes(query) || tk.includes(query) || sct.includes(query);
+    const nv = (loc.ten_nvien || "").toLowerCase();
+    const cv = (loc.ten_cviec || "").toLowerCase();
+    const n = (loc.note || "").toLowerCase();
+    return mk.includes(query) || tk.includes(query) || sct.includes(query) || nv.includes(query) || cv.includes(query) || n.includes(query);
   });
   renderList(filtered);
 }
@@ -80,14 +142,10 @@ function filterLocations() {
 // Render danh sách ra màn hình
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
-  const countElement = document.getElementById("locationCount"); // Lấy thẻ hiển thị số lượng
+  const countElement = document.getElementById("locationCount");
   
   if(!listElement) return;
-  
-  // Cập nhật số lượng: (số phần tử đang hiển thị / tổng số phần tử ban đầu)
-  if(countElement) {
-    countElement.innerText = `(${locations.length}/${allLocations.length})`;
-  }
+  if(countElement) countElement.innerText = `(${locations.length}/${allLocations.length})`;
   
   listElement.innerHTML = "";
   if (locations.length === 0) {
@@ -110,7 +168,6 @@ function renderList(locations) {
       <div class="maps-row">
         <a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>
       </div>
-      
       <div class="action-bar">
         <button class="btn-edit" onclick="openEditModal('${loc.id}')">Sửa</button>
         <button class="btn-delete" onclick="openConfirmModal('${loc.id}')">Xóa</button>
@@ -120,32 +177,36 @@ function renderList(locations) {
   });
 }
 
+// Hàm show thông báo tạm thời
+function showToast(msg) {
+  alert(msg); // Tạm dùng alert, bác có thể thay bằng Toast xịn nếu muốn
+}
+
 // Thêm vị trí mới (lấy tọa độ GPS)
 function getLocation() {
-  const searchType = document.getElementById("searchType").value;
-  const searchValueInput = document.getElementById("searchValue").value.trim();
-  const employeeName = document.getElementById("employeeName").value.trim();
-  const jobTitle = document.getElementById("jobTitle").value.trim();
-  const noteContent = document.getElementById("noteContent").value.trim();
-  const statusMsg = document.getElementById("statusMsg");
+  const searchType = document.getElementById("loai_tim").value;
+  const searchValueInput = document.getElementById("locName").value.trim();
+  const employeeName = document.getElementById("employeeSelect").value;
+  const jobTitle = document.getElementById("jobSelect").value;
+  const noteContent = document.getElementById("locNote").value.trim();
 
   if (!searchValueInput) {
-    statusMsg.innerText = "Vui lòng nhập thông tin tìm kiếm!";
+    showToast("Vui lòng nhập thông tin tìm kiếm!");
     return;
   }
   if (!employeeName) {
-    statusMsg.innerText = "Vui lòng nhập Tên nhân viên!";
+    showToast("Vui lòng chọn Tên nhân viên!");
     return;
   }
   if (!jobTitle) {
-    statusMsg.innerText = "Vui lòng nhập Tên công việc!";
+    showToast("Vui lòng chọn Tên công việc!");
     return;
   }
 
-  statusMsg.innerText = "Đang lấy tọa độ, vui lòng đợi...";
+  showToast("Đang lấy tọa độ, vui lòng đợi...");
 
   if (!navigator.geolocation) {
-    statusMsg.innerText = "Trình duyệt không hỗ trợ Geolocation.";
+    showToast("Trình duyệt không hỗ trợ Geolocation.");
     return;
   }
 
@@ -158,15 +219,9 @@ function getLocation() {
       const uniqueId = Date.now().toString();
 
       const locData = {
-        id: uniqueId,
-        search_type: searchType,
-        search_value: searchValueInput,
-        ten_nvien: employeeName,
-        ten_cviec: jobTitle,
-        note: noteContent,
-        lat: lat,
-        lng: lng,
-        time: timeStr
+        id: uniqueId, search_type: searchType, search_value: searchValueInput,
+        ten_nvien: employeeName, ten_cviec: jobTitle, note: noteContent,
+        lat: lat, lng: lng, time: timeStr
       };
 
       fetch(API_URL, {
@@ -177,31 +232,28 @@ function getLocation() {
       .then(res => res.json())
       .then(res => {
         if (res.status === "success") {
-          locData.ma_khang = res.ma_khang; 
-          locData.ten_khang = res.ten_khang;
-          locData.so_cto = res.so_cto;
-          locData.ma_tram = res.ma_tram;
-          locData.ten_tram = res.ten_tram;
-          locData.so_cot = res.so_cot;
+          locData.ma_khang = res.ma_khang; locData.ten_khang = res.ten_khang;
+          locData.so_cto = res.so_cto; locData.ma_tram = res.ma_tram;
+          locData.ten_tram = res.ten_tram; locData.so_cot = res.so_cot;
           
           allLocations.unshift(locData);
           allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
           filterLocations();
 
-          statusMsg.innerText = `Đã lưu vị trí: ${res.ma_khang} - ${res.ten_khang}`;
-          document.getElementById("searchValue").value = "";
-          document.getElementById("noteContent").value = "";
+          showToast(`Đã lưu vị trí: ${res.ma_khang} - ${res.ten_khang}`);
+          document.getElementById("locName").value = searchType === 'MKH' ? 'PB060600' : '';
+          document.getElementById("locNote").value = "";
         } else {
-          statusMsg.innerText = "Lỗi: " + res.message;
+          showToast("Lỗi: " + res.message);
         }
       })
       .catch(err => {
-        statusMsg.innerText = "Lỗi kết nối máy chủ!";
+        showToast("Lỗi kết nối máy chủ!");
         console.error(err);
       });
     },
     error => {
-      statusMsg.innerText = "Không thể lấy tọa độ. Vui lòng kiểm tra quyền GPS.";
+      showToast("Không thể lấy tọa độ. Vui lòng kiểm tra quyền GPS.");
       console.error(error);
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
@@ -209,19 +261,16 @@ function getLocation() {
 }
 
 // ---- CÁC HÀM XỬ LÝ MODAL (SỬA & XÓA) ----
-
 function openEditModal(id) {
   currentId = id;
   const loc = allLocations.find(item => String(item.id) === String(id));
   if (loc) {
-    document.getElementById("editSearchType").value = "MKH"; 
-    document.getElementById("editSearchValue").value = loc.ma_khang || "";
-    document.getElementById("editEmployeeName").value = loc.ten_nvien || "";
-    document.getElementById("editJobTitle").value = loc.ten_cviec || "";
-    document.getElementById("editNoteContent").value = loc.note || "";
-    document.getElementById("editUpdateGps").checked = false;
-    document.getElementById("editStatusMsg").innerText = "";
-    document.getElementById("editModal").style.display = "block";
+    document.getElementById("editLoaiTim").value = "MKH"; 
+    document.getElementById("editNameInput").value = loc.ma_khang || "";
+    document.getElementById("editEmployeeSelect").value = loc.ten_nvien || "";
+    document.getElementById("editJobSelect").value = loc.ten_cviec || "";
+    document.getElementById("editNoteInput").value = loc.note || "";
+    document.getElementById("editModal").style.display = "flex";
   }
 }
 
@@ -231,138 +280,53 @@ function closeEditModal() {
 }
 
 function saveEditLocation() {
-  const newSearchType = document.getElementById("editSearchType").value;
-  const newSearchValue = document.getElementById("editSearchValue").value.trim();
-  const newEmployee = document.getElementById("editEmployeeName").value.trim();
-  const newJob = document.getElementById("editJobTitle").value.trim();
-  const newNote = document.getElementById("editNoteContent").value.trim();
-  const updateGps = document.getElementById("editUpdateGps").checked;
-  const editStatusMsg = document.getElementById("editStatusMsg");
+  const newSearchType = document.getElementById("editLoaiTim").value;
+  const newSearchValue = document.getElementById("editNameInput").value.trim();
+  const newEmployee = document.getElementById("editEmployeeSelect").value;
+  const newJob = document.getElementById("editJobSelect").value;
+  const newNote = document.getElementById("editNoteInput").value.trim();
 
   if (!newSearchValue || !newEmployee || !newJob) {
-    editStatusMsg.innerText = "Vui lòng nhập đủ các thông tin bắt buộc!";
+    showToast("Vui lòng nhập đủ thông tin bắt buộc!");
     return;
   }
 
-  editStatusMsg.innerText = "Đang xử lý...";
-  document.getElementById("btnSaveEdit").disabled = true;
+  showToast("Đang cập nhật...");
 
-  if (updateGps) {
-    if (!navigator.geolocation) {
-      editStatusMsg.innerText = "Trình duyệt không hỗ trợ Geolocation.";
-      document.getElementById("btnSaveEdit").disabled = false;
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const now = new Date();
-        const timeStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-        fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "EDIT",
-            id: currentId,
-            search_type: newSearchType,
-            search_value: newSearchValue,
-            ten_nvien: newEmployee,
-            ten_cviec: newJob,
-            note: newNote,
-            lat: lat,
-            lng: lng,
-            time: timeStr
-          })
-        })
-        .then(res => res.json())
-        .then(res => {
-          document.getElementById("btnSaveEdit").disabled = false;
-          if (res.status === "success") {
-            const loc = allLocations.find(item => String(item.id) === String(currentId));
-            if (loc) {
-              loc.ma_khang = res.ma_khang;
-              loc.ten_khang = res.ten_khang;
-              loc.so_cto = res.so_cto;
-              loc.ma_tram = res.ma_tram;
-              loc.ten_tram = res.ten_tram;
-              loc.so_cot = res.so_cot;
-              loc.ten_nvien = newEmployee;
-              loc.ten_cviec = newJob;          
-              loc.note = newNote;
-              loc.lat = lat;
-              loc.lng = lng;
-              loc.time = timeStr;
-            }
-            allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
-            filterLocations();
-            closeEditModal();
-          } else {
-            editStatusMsg.innerText = "Lỗi: " + res.message;
-          }
-        })
-        .catch(err => {
-          document.getElementById("btnSaveEdit").disabled = false;
-          editStatusMsg.innerText = "Lỗi kết nối máy chủ!";
-          console.error(err);
-        });
-      },
-      error => {
-        document.getElementById("btnSaveEdit").disabled = false;
-        editStatusMsg.innerText = "Không thể lấy tọa độ.";
-        console.error(error);
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-    );
-  } else {
-    // Không cập nhật tọa độ GPS
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "EDIT",
-        id: currentId,
-        search_type: newSearchType,
-        search_value: newSearchValue,
-        ten_nvien: newEmployee,
-        ten_cviec: newJob,
-        note: newNote
-      })
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "EDIT", id: currentId, search_type: newSearchType, search_value: newSearchValue,
+      ten_nvien: newEmployee, ten_cviec: newJob, note: newNote
     })
-    .then(res => res.json())
-    .then(res => {
-      document.getElementById("btnSaveEdit").disabled = false;
-      if (res.status === "success") {
-        const loc = allLocations.find(item => String(item.id) === String(currentId));
-        if (loc) {
-          loc.ma_khang = res.ma_khang;
-          loc.ten_khang = res.ten_khang;
-          loc.so_cto = res.so_cto;
-          loc.ma_tram = res.ma_tram;
-          loc.ten_tram = res.ten_tram;
-          loc.so_cot = res.so_cot;
-          loc.ten_nvien = newEmployee;
-          loc.ten_cviec = newJob;          
-          loc.note = newNote;
-        }
-        filterLocations();
-        closeEditModal();
-      } else {
-        editStatusMsg.innerText = "Lỗi: " + res.message;
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      const loc = allLocations.find(item => String(item.id) === String(currentId));
+      if (loc) {
+        loc.ma_khang = res.ma_khang; loc.ten_khang = res.ten_khang;
+        loc.so_cto = res.so_cto; loc.ma_tram = res.ma_tram;
+        loc.ten_tram = res.ten_tram; loc.so_cot = res.so_cot;
+        loc.ten_nvien = newEmployee; loc.ten_cviec = newJob; loc.note = newNote;
       }
-    })
-    .catch(err => {
-      document.getElementById("btnSaveEdit").disabled = false;
-      editStatusMsg.innerText = "Lỗi kết nối máy chủ!";
-      console.error(err);
-    });
-  }
+      filterLocations();
+      closeEditModal();
+      showToast("Cập nhật thành công!");
+    } else {
+      showToast("Lỗi: " + res.message);
+    }
+  })
+  .catch(err => {
+    showToast("Lỗi kết nối máy chủ!");
+    console.error(err);
+  });
 }
 
 function openConfirmModal(id) {
   currentId = id;
-  document.getElementById("confirmModal").style.display = "block";
+  document.getElementById("confirmModal").style.display = "flex";
 }
 
 function closeConfirmModal() {
@@ -387,13 +351,14 @@ function deleteLocation() {
       allLocations = allLocations.filter(loc => String(loc.id) !== String(currentId));
       filterLocations();
       closeConfirmModal();
+      showToast("Xóa thành công!");
     } else {
-      alert("Lỗi khi xóa: " + res.message);
+      showToast("Lỗi khi xóa: " + res.message);
     }
   })
   .catch(err => {
     if(btn) btn.disabled = false;
-    alert("Lỗi kết nối máy chủ!");
+    showToast("Lỗi kết nối máy chủ!");
     console.error(err);
   });
 }
