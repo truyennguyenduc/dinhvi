@@ -197,7 +197,6 @@ function renderList(locations) {
       <div class="maps-row">
         ${(loc.lat && loc.lng) ? `<a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>` : `<span style="color:#888; font-size: 13px;">Không có tọa độ</span>`}
         
-        <!-- Đã xóa hết các thứ khác, chỉ để lại đúng ngày tháng năm -->
         <span style="font-size: 13px; color: #555; font-weight: bold;">${dateOnly}</span>
       </div>
       
