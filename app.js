@@ -427,7 +427,7 @@ function deleteLocation() {
   })
   .catch(err => {
     if(btn) btn.disabled = false;
-    showToast("Lỗi kết nối máy chủ!");
+    showToast("Lỗi không lấy được dữ liệu...");
     console.error(err);
   });
 }
