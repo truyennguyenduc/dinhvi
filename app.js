@@ -77,7 +77,7 @@ function loadInitData() {
   .then(res => res.json())
   .then(res => {
     if (res.status === "success") {
-      populateDropdown("jobSelect", "editJobSelect", res.cong_viec, "Chọn công việc");
+      populateDropdown("jobSelect", "editJobSelect", res.cong_viec, "Công việc");
       populateDropdown("employeeSelect", "editEmployeeSelect", res.nhan_vien, "Chọn nhân viên");
       
       const savedJob = localStorage.getItem("cmis_jobSelect");
