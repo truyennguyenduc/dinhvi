@@ -164,15 +164,26 @@ function renderList(locations) {
   
   locations.forEach(loc => {
     const li = document.createElement("li");
-    // Click vào để hiển thị 2 nút Sửa/Xóa
     li.onclick = function() {
         this.classList.toggle("selected");
     };
 
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
     
-    // Cắt lấy phần ngày dd/mm/yyyy từ chuỗi loc.time (ví dụ "19/08/2026 10:38:56" -> "19/08/2026")
-    const dateOnly = loc.time ? loc.time.split(' ')[0] : "---";
+    // Xử lý chuyển đổi ngày từ chuẩn ISO sang đúng định dạng dd/mm/yyyy
+    let dateOnly = "---";
+    if (loc.time) {
+        const d = new Date(loc.time);
+        if (!isNaN(d.getTime())) {
+            const day = d.getDate().toString().padStart(2, '0');
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const year = d.getFullYear();
+            dateOnly = `${day}/${month}/${year}`;
+        } else {
+            // Backup nếu lỗi
+            dateOnly = loc.time.split('T')[0];
+        }
+    }
     
     li.innerHTML = `
       <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
@@ -183,10 +194,11 @@ function renderList(locations) {
       <div class="loc-note">Ghi chú: ${loc.note ? loc.note : "Không có ghi chú"}</div>
       <div class="coords">📍 Tọa độ: ${loc.lat || "Chưa có"}, ${loc.lng || "Chưa có"}</div>
       
-      <!-- Đã thêm phần tử span hiển thị ngày vào flexbox maps-row -->
       <div class="maps-row">
         ${(loc.lat && loc.lng) ? `<a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>` : `<span style="color:#888; font-size: 13px;">Không có tọa độ</span>`}
-        <span style="font-size: 13px; color: #555; font-style: italic;">📅 Ngày: <b>${dateOnly}</b></span>
+        
+        <!-- Đã xóa hết các thứ khác, chỉ để lại đúng ngày tháng năm -->
+        <span style="font-size: 13px; color: #555; font-weight: bold;">${dateOnly}</span>
       </div>
       
       <div class="action-bar">
