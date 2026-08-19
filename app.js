@@ -164,14 +164,16 @@ function renderList(locations) {
   
   locations.forEach(loc => {
     const li = document.createElement("li");
-    // CHỖ NÀY FIX LỖI CLICK ĐỂ XỔ XUỐNG
+    // Click vào để hiển thị 2 nút Sửa/Xóa
     li.onclick = function() {
         this.classList.toggle("selected");
     };
 
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
     
-    // THÊM event.stopPropagation() ĐỂ CLICK NÚT KHÔNG BỊ ĐÓNG LIST
+    // Cắt lấy phần ngày dd/mm/yyyy từ chuỗi loc.time (ví dụ "19/08/2026 10:38:56" -> "19/08/2026")
+    const dateOnly = loc.time ? loc.time.split(' ')[0] : "---";
+    
     li.innerHTML = `
       <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
       <div class="loc-job" style="color: #d9534f; font-weight: bold; font-size: 12px; margin-bottom: 4px;">
@@ -180,9 +182,13 @@ function renderList(locations) {
       <div class="loc-employee">👤 NV lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"} (${loc.ten_cviec ? loc.ten_cviec : "Chưa cập nhật"})</div>
       <div class="loc-note">Ghi chú: ${loc.note ? loc.note : "Không có ghi chú"}</div>
       <div class="coords">📍 Tọa độ: ${loc.lat || "Chưa có"}, ${loc.lng || "Chưa có"}</div>
+      
+      <!-- Đã thêm phần tử span hiển thị ngày vào flexbox maps-row -->
       <div class="maps-row">
         ${(loc.lat && loc.lng) ? `<a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>` : `<span style="color:#888; font-size: 13px;">Không có tọa độ</span>`}
+        <span style="font-size: 13px; color: #555; font-style: italic;">📅 Ngày: <b>${dateOnly}</b></span>
       </div>
+      
       <div class="action-bar">
         <button class="btn-edit" onclick="event.stopPropagation(); openEditModal('${loc.id}')">Sửa</button>
         <button class="btn-delete" onclick="event.stopPropagation(); openConfirmModal('${loc.id}')">Xóa</button>
