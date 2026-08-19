@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec";
+const API_URL = "https://script.google.com/macros/s/13dMMeQn-IS6y_yoI_LVj3paZAH-e3PmNH8Nj_AR4tts/exec";
 
 let allLocations = [];
 let employeesList = []; 
