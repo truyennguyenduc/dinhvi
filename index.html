@@ -111,7 +111,8 @@
     <div id="confirmModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title" style="color: #dc3545;">Xác nhận xóa</div>
-            <div class="modal-message">Bạn có chắc chắn muốn xóa khách hàng này?</div>
+            <div class="modal-message">Nhập mật khẩu của nhân viên đã tạo để xóa.</div>
+            <input type="password" id="deletePassword" placeholder="Mật khẩu xác nhận" style="margin-bottom: 10px;">
             <div class="modal-buttons">
                 <button class="btn-modal-cancel" onclick="closeConfirmModal()">Hủy</button>
                 <button class="btn-modal-confirm" id="btnConfirmDelete" onclick="deleteLocation()" style="background: #dc3545;">Xóa</button>
@@ -158,6 +159,13 @@
                 <textarea id="editNoteInput"></textarea>
             </div>
 
+            <div class="form-group" style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 5px; color: #dc3545; font-weight: normal; font-size: 13px;">
+                    <input type="checkbox" id="editUpdateCoords" style="width: auto;"> Cập nhật lại tọa độ mới
+                </label>
+                <input type="password" id="editPassword" placeholder="Nhập mật khẩu của nhân viên tạo" style="margin-top: 5px;">
+            </div>
+
             <div class="modal-buttons">
                 <button class="btn-modal-cancel" onclick="closeEditModal()">Hủy</button>
                 <button class="btn-modal-confirm" onclick="saveEditLocation()">Cập nhật</button>
@@ -183,12 +191,10 @@
             }
 
             if (loaiTimSelect && locNameInput) {
-                // 1. Bắt sự kiện khi người dùng tự bấm đổi bằng tay
                 loaiTimSelect.addEventListener('change', function() {
                     updateInputState(this, locNameInput);
                 });
                 
-                // 2. Sửa lỗi load trang: Đợi app.js phục hồi bộ nhớ xong thì tự động chạy cập nhật ô Input
                 setTimeout(() => {
                     updateInputState(loaiTimSelect, locNameInput);
                 }, 150);
@@ -204,7 +210,5 @@
             }
         });
     </script>
-</body>
-</html>
 </body>
 </html>
