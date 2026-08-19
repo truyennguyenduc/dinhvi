@@ -208,7 +208,7 @@ function renderList(locations) {
           No: ${loc.so_cto ? loc.so_cto : "---"} | Trạm: ${loc.ten_tram ? loc.ten_tram : "---"} | Cột: ${loc.so_cot ? loc.so_cot : "---"}
       </div>
       <div class="loc-employee">👤 NV lấy tọa độ: ${loc.ten_nvien ? loc.ten_nvien : "Chưa cập nhật"} (${loc.ten_cviec ? loc.ten_cviec : "Chưa cập nhật"})</div>
-      <div class="loc-note">Ghi chú: ${loc.note ? loc.note : "Không có ghi chú"}</div>
+      <div class="loc-note">📝 Ghi chú: ${loc.note ? loc.note : "Không có ghi chú"}</div>
       <div class="coords">📍 Tọa độ: ${loc.lat || "Chưa có"}, ${loc.lng || "Chưa có"}</div>
       
       <div class="maps-row">
