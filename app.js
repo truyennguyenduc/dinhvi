@@ -251,6 +251,11 @@ function getLocation() {
     return;
   }
   
+  if (searchType === 'MKH' && searchValueInput.length !== 13) {
+    showToast("Lỗi: MKH phải nhập đúng 13 ký tự!");
+    return;
+  }
+  
   if (searchType === 'NO' && searchValueInput.length !== 8) {
     showToast("Lỗi: Số công tơ phải nhập đúng 8 ký tự!");
     return;
