@@ -78,16 +78,15 @@ function filterLocations() {
 }
 
 // Render danh sách ra màn hình
-// Render danh sách ra màn hình
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
   const countElement = document.getElementById("locationCount"); // Lấy thẻ hiển thị số lượng
   
   if(!listElement) return;
   
-  // Cập nhật số lượng danh sách hiển thị
+  // Cập nhật số lượng: (số phần tử đang hiển thị / tổng số phần tử ban đầu)
   if(countElement) {
-    countElement.innerText = `(${locations.length})`;
+    countElement.innerText = `(${locations.length}/${allLocations.length})`;
   }
   
   listElement.innerHTML = "";
