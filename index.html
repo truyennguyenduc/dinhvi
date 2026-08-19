@@ -424,7 +424,6 @@
                 loaiTimSelect.addEventListener('change', function() {
                     if (this.value === 'MKH') {
                         locNameInput.value = 'PB060600';
-                        locNameInput.removeAttribute('placeholder');
                     } else {
                         locNameInput.value = '';
                         locNameInput.setAttribute('placeholder', 'Nhập 8 số cuối');
@@ -439,7 +438,6 @@
                 editLoaiTimSelect.addEventListener('change', function() {
                     if (this.value === 'MKH') {
                         editNameInput.value = 'PB060600';
-                        editNameInput.removeAttribute('placeholder');
                     } else {
                         editNameInput.value = '';
                         editNameInput.setAttribute('placeholder', 'Nhập 8 số cuối');
