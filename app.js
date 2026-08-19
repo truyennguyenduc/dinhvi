@@ -78,15 +78,24 @@ function filterLocations() {
 }
 
 // Render danh sách ra màn hình
+// Render danh sách ra màn hình
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
+  const countElement = document.getElementById("locationCount"); // Lấy thẻ hiển thị số lượng
+  
   if(!listElement) return;
+  
+  // Cập nhật số lượng danh sách hiển thị
+  if(countElement) {
+    countElement.innerText = `(${locations.length})`;
+  }
   
   listElement.innerHTML = "";
   if (locations.length === 0) {
     listElement.innerHTML = "<li>Không có dữ liệu.</li>";
     return;
   }
+  
   locations.forEach(loc => {
     const li = document.createElement("li");
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
