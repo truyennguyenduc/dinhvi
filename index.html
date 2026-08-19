@@ -283,15 +283,15 @@
                 </div>
                 
                 <div class="form-group form-row">
-                <div class="col-40">
-                    <select id="loai_tim">
-                        <option value="MKH">Tìm MKH</option>
-                        <option value="NO">Số CTơ</option>
-                    </select>
-                </div>
-                <div class="col-60">
-              <input type="text" id="locName" style="text-transform: uppercase; margin-bottom:3px;" value="PB060600">      
-                </div>
+                    <div class="col-40">
+                        <select id="loai_tim">
+                            <option value="MKH">Tìm MKH</option>
+                            <option value="NO">Số CTơ</option>
+                        </select>
+                    </div>
+                    <div class="col-60">
+                        <input type="text" id="locName" placeholder="Nhập 13 ký tự MKH" style="text-transform: uppercase; margin-bottom:3px;">      
+                    </div>
                 </div>
             </div>
 
@@ -299,7 +299,6 @@
                 <textarea id="locNote" placeholder="Nhập ghi chú thêm nếu có..."></textarea>
             </div>
             
-            <!-- Hàng chứa Combobox Công việc (40%) và Nhân viên (60%) -->
             <div class="form-group form-row">
                 <div class="col-40">
                     <select id="jobSelect" onchange="onJobChange()">
@@ -318,8 +317,7 @@
             <div class="list-title">Danh sách vị trí công tơ: <span id="locationCount" style="color: #007bff;">(0)</span></div>
 
             <div class="search-box">
-                <!-- YÊU CẦU 2: Ghi nhớ giá trị tìm kiếm khi gõ -->
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Nhập gần đúng MKH, nhân viên, công việc, ghi chú..." oninput="onSearchInput()">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Nhập gần đúng MKH, Số CT, NV, công việc, ghi chú..." oninput="onSearchInput()">
             </div>
         </div>
 
@@ -333,10 +331,8 @@
         </div>
     </div>
 
-    <!-- Hộp Toast -->
     <div id="toast-container"></div>
 
-    <!-- Modal Xóa -->
     <div id="confirmModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title" style="color: #dc3545;">Xác nhận xóa</div>
@@ -354,14 +350,23 @@
         </div>
     </div>
 
-    <!-- Modal Sửa -->
+    <!-- Modal Sửa cập nhật Combobox tìm kiếm 2 Điều kiện -->
     <div id="editModal" class="modal-overlay">
         <div class="modal-box" style="text-align: left;">
             <div class="modal-title" style="text-align: center;">Chỉnh sửa thông tin</div>
             
-            <div class="form-group">
-                <label for="editNameInput">Mã khách hàng:</label>
-                <input type="text" id="editNameInput" style="text-transform: uppercase;">
+            <div class="form-group form-row">
+                <div class="col-40">
+                    <label for="editLoaiTim">Loại tìm:</label>
+                    <select id="editLoaiTim">
+                        <option value="MKH">MKH</option>
+                        <option value="NO">Số CTơ</option>
+                    </select>
+                </div>
+                <div class="col-60">
+                    <label for="editNameInput">Dữ liệu:</label>
+                    <input type="text" id="editNameInput" style="text-transform: uppercase;">
+                </div>
             </div>
 
             <div class="form-group form-row">
@@ -396,7 +401,6 @@
         </div>
     </div>
 
-    <!-- Modal Xác nhận GPS Mới -->
     <div id="gpsConfirmModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">Cập nhật tọa độ GPS</div>
@@ -410,5 +414,36 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+        // JS phụ để tự động đổi Placeholder ô nhập dựa trên loại tìm kiếm
+        document.addEventListener('DOMContentLoaded', () => {
+            const loaiTimSelect = document.getElementById('loai_tim');
+            const locNameInput = document.getElementById('locName');
+            
+            if (loaiTimSelect && locNameInput) {
+                loaiTimSelect.addEventListener('change', function() {
+                    if (this.value === 'MKH') {
+                        locNameInput.placeholder = 'Nhập 13 ký tự MKH';
+                    } else {
+                        locNameInput.placeholder = 'Nhập 8 số cuối Công Tơ';
+                    }
+                    locNameInput.value = '';
+                });
+            }
+
+            const editLoaiTimSelect = document.getElementById('editLoaiTim');
+            const editNameInput = document.getElementById('editNameInput');
+
+            if (editLoaiTimSelect && editNameInput) {
+                editLoaiTimSelect.addEventListener('change', function() {
+                    if (this.value === 'MKH') {
+                        editNameInput.placeholder = 'Nhập 13 ký tự MKH';
+                    } else {
+                        editNameInput.placeholder = 'Nhập 8 số cuối CT';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
