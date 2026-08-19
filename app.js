@@ -436,7 +436,8 @@ function saveEditLocation() {
     return;
   }
 
-  showToast("Đang xử lý...");
+  // Thông báo tiến trình đang xử lý
+  showToast("⏳ Đang xử lý cập nhật, vui lòng đợi...");
 
   const sendEditRequest = (lat = "", lng = "", time = "") => {
     fetch(API_URL, {
@@ -521,6 +522,9 @@ function deleteLocation() {
 
   const btn = document.getElementById("btnConfirmDelete");
   if(btn) btn.disabled = true;
+
+  // Thông báo tiến trình đang xử lý
+  showToast("⏳ Đang xử lý xóa, vui lòng đợi...");
 
   fetch(API_URL, {
     method: "POST",
