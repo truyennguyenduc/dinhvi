@@ -72,9 +72,11 @@ function loadInitData() {
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
+    redirect: "follow",
     body: JSON.stringify({ action: "GET_INIT_DATA" })
   })
-  .then(res => res.json())
+  .then(res => res.text())
+  .then(text => JSON.parse(text))
   .then(res => {
     if (res.status === "success") {
       populateDropdown("jobSelect", "editJobSelect", res.cong_viec, "Công việc");
@@ -94,7 +96,7 @@ function loadInitData() {
   })
   .catch(err => {
     console.error(err);
-    if(listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ!</li>`;
+    if(listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ! Đang thử lại...</li>`;
   });
 }
 
@@ -162,7 +164,6 @@ function renderList(locations) {
     return;
   }
   
-  // Dùng DocumentFragment để gom thẻ, chống giật lag
   const fragment = document.createDocumentFragment();
   
   locations.forEach(loc => {
@@ -217,11 +218,9 @@ function renderList(locations) {
       </div>
     `;
     
-    // Thêm vào bộ nhớ đệm thay vì DOM thực
     fragment.appendChild(li);
   });
   
-  // Render tất cả 1 lần duy nhất
   listElement.appendChild(fragment);
 }
 
@@ -322,9 +321,11 @@ function getLocation() {
     fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
+      redirect: "follow",
       body: JSON.stringify({ action: "ADD", location: locData })
     })
-    .then(res => res.json())
+    .then(res => res.text())
+    .then(text => JSON.parse(text))
     .then(res => {
       if (res.status === "success") {
         locData.ma_khang = res.ma_khang; locData.ten_khang = res.ten_khang;
@@ -343,8 +344,9 @@ function getLocation() {
       }
     })
     .catch(err => {
-      showToast("Lỗi kết nối máy chủ!");
+      showToast("Mạng chậm! Đang đồng bộ lại...");
       console.error(err);
+      loadInitData();
     });
   };
 
@@ -365,7 +367,6 @@ function getLocation() {
   );
 }
 
-// ---- CÁC HÀM XỬ LÝ MODAL SỬA & XÓA ----
 function openEditModal(id) {
   currentId = id;
   const loc = allLocations.find(item => String(item.id) === String(id));
@@ -376,7 +377,6 @@ function openEditModal(id) {
     document.getElementById("editJobSelect").value = loc.ten_cviec || "";
     document.getElementById("editNoteInput").value = loc.note || "";
     
-    // Reset checkbox tọa độ và mật khẩu
     document.getElementById("editUpdateCoords").checked = false;
     document.getElementById("editPassword").value = "";
 
@@ -414,13 +414,15 @@ function saveEditLocation() {
     fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
+      redirect: "follow",
       body: JSON.stringify({
         action: "EDIT", id: currentId, search_type: newSearchType, search_value: newSearchValue,
         ten_nvien: newEmployee, ten_cviec: newJob, note: newNote, mat_khau: password,
         lat: lat, lng: lng, time: time
       })
     })
-    .then(res => res.json())
+    .then(res => res.text())
+    .then(text => JSON.parse(text))
     .then(res => {
       if (res.status === "success") {
         const loc = allLocations.find(item => String(item.id) === String(currentId));
@@ -446,7 +448,6 @@ function saveEditLocation() {
     });
   };
 
-  // Nếu muốn cập nhật tọa độ
   if (updateCoords) {
     if (!navigator.geolocation) {
       showToast("Lỗi: Trình duyệt không hỗ trợ GPS!");
@@ -465,14 +466,13 @@ function saveEditLocation() {
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
   } else {
-    // Không cập nhật tọa độ
     sendEditRequest();
   }
 }
 
 function openConfirmModal(id) {
   currentId = id;
-  document.getElementById("deletePassword").value = ""; // Xóa trắng MK
+  document.getElementById("deletePassword").value = ""; 
   document.getElementById("confirmModal").style.display = "flex";
 }
 
@@ -496,9 +496,11 @@ function deleteLocation() {
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
+    redirect: "follow",
     body: JSON.stringify({ action: "DELETE", id: currentId, mat_khau: password })
   })
-  .then(res => res.json())
+  .then(res => res.text())
+  .then(text => JSON.parse(text))
   .then(res => {
     if(btn) btn.disabled = false;
     if (res.status === "success") {
