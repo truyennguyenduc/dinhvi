@@ -117,25 +117,43 @@ function parseTimeString(timeStr) {
   return isNaN(t) ? 0 : t;
 }
 
-// Lọc danh sách hiển thị (Áp dụng cho mọi giá trị nhập vào)
+// Hàm loại bỏ dấu tiếng Việt để tìm kiếm thông minh và bao quát hơn
+function removeAccents(str) {
+  if (!str) return "";
+  return String(str)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d").replace(/Đ/g, "D");
+}
+
+// Lọc danh sách hiển thị (Khắc phục lỗi định dạng số và hỗ trợ tìm không dấu)
 function filterLocations() {
   const searchInput = document.getElementById("searchInput");
-  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const rawQuery = searchInput ? searchInput.value.trim() : "";
   
-  if (!query) {
+  if (!rawQuery) {
     renderList(allLocations);
     return;
   }
 
+  // Chuyển từ khóa tìm kiếm về chữ thường và bỏ dấu
+  const query = removeAccents(rawQuery.toLowerCase());
+
   const filtered = allLocations.filter(loc => {
-    const mk = (loc.ma_khang || "").toLowerCase();
-    const tk = (loc.ten_khang || "").toLowerCase();
-    const sct = (loc.so_cto || "").toLowerCase();
-    const nv = (loc.ten_nvien || "").toLowerCase();
-    const cv = (loc.ten_cviec || "").toLowerCase();
-    const n = (loc.note || "").toLowerCase();
-    return mk.includes(query) || tk.includes(query) || sct.includes(query) || nv.includes(query) || cv.includes(query) || n.includes(query);
+    // Gộp tất cả thông tin lại thành 1 chuỗi an toàn (dùng String() để tránh lỗi kiểu số)
+    const fullText = String(loc.ma_khang || "") + " " + 
+                     String(loc.ten_khang || "") + " " + 
+                     String(loc.so_cto || "") + " " + 
+                     String(loc.ten_nvien || "") + " " + 
+                     String(loc.ten_cviec || "") + " " + 
+                     String(loc.note || "");
+                     
+    // Chuyển chuỗi dữ liệu trên về chữ thường và bỏ dấu
+    const normalizedText = removeAccents(fullText.toLowerCase());
+    
+    return normalizedText.includes(query);
   });
+  
   renderList(filtered);
 }
 
