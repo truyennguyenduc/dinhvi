@@ -72,38 +72,28 @@ function applyInitData(res) {
   filterLocations();
 }
 
-// Đồng bộ danh sách local xuống cache trình duyệt
+// Bỏ lưu cache danh sách vào localStorage để tránh hiển thị dữ liệu cũ
 function syncLocalCache() {
-  const cachedData = localStorage.getItem("cmis_full_init_data");
-  if (cachedData) {
-    try {
-      let parsed = JSON.parse(cachedData);
-      parsed.locations = allLocations;
-      localStorage.setItem("cmis_full_init_data", JSON.stringify(parsed));
-    } catch(e) {}
-  }
+  localStorage.removeItem("cmis_full_init_data");
 }
 
 function loadInitData() {
   const listElement = document.getElementById("locationList");
 
-  // 1. ĐỌC CACHE MÁY TÍNH/ĐIỆN THOẠI - HIỆN NGAY TRONG 0.001s
-  const cachedData = localStorage.getItem("cmis_full_init_data");
-  if (cachedData) {
-    try {
-      const parsed = JSON.parse(cachedData);
-      applyInitData(parsed);
-    } catch (e) { console.error(e); }
-  } else if (listElement) {
+  // 1. LUÔN HIỆN CON XOAY SPINNER KHI MỚI TẢI TRANG
+  if (listElement) {
     listElement.innerHTML = `
       <li style="text-align: center; padding: 20px;">
         <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1kYXNoYXJyYXk9IjIzMCAxMDAiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDEwMCAxMDAiIHRvPSIzNjAgMTAwIDEwMCIgZHVyPSIxcyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiLz48L2NpcmNsZT48L3N2Zz4=" alt="loading" style="width: 30px; height: 30px; vertical-align: middle; margin-right: 10px;">
-        <span style="font-weight: bold; color: #007bff; vertical-align: middle; font-size: 15px;">Đang tải danh sách...</span>
+        <span style="font-weight: bold; color: #007bff; vertical-align: middle; font-size: 15px;">Đang tải dữ liệu mới nhất...</span>
       </li>
     `;
   }
 
-  // 2. GỌI SERVER CHẠY NGẦM ĐỂ CẬP NHẬT TRONG LẶNG LẼ
+  // Xóa cache cũ ở client nếu có
+  localStorage.removeItem("cmis_full_init_data");
+  
+ // 2. GỌI SERVER ĐỂ LẤY DỮ LIỆU MỚI NHẤT
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -114,15 +104,14 @@ function loadInitData() {
   .then(text => JSON.parse(text))
   .then(res => {
     if (res.status === "success") {
-      localStorage.setItem("cmis_full_init_data", JSON.stringify(res));
       applyInitData(res);
     } else {
-      if(!cachedData && listElement) listElement.innerHTML = `<li>Lỗi: ${res.message}</li>`;
+      if (listElement) listElement.innerHTML = `<li>Lỗi: ${res.message}</li>`;
     }
   })
   .catch(err => {
     console.error(err);
-    if(!cachedData && listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ! Đang thử lại...</li>`;
+    if (listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ! Vui lòng tải lại trang.</li>`;
   });
 }
 
