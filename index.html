@@ -290,7 +290,7 @@
                         </select>
                     </div>
                     <div class="col-60">
-                        <input type="text" id="locName" value="PB060600" style="text-transform: uppercase; margin-bottom:3px;">      
+                        <input type="text" id="locName" value="PB060600" style="margin-bottom:3px;">      
                     </div>
                 </div>
             </div>
@@ -423,9 +423,9 @@
             if (loaiTimSelect && locNameInput) {
                 loaiTimSelect.addEventListener('change', function() {
                     if (this.value === 'MKH') {
-                        locNameInput.placeholder = 'Nhập 13 ký tự MKH';
+                        locNameInput.placeholder = 'PB060600';
                     } else {
-                        locNameInput.placeholder = 'Nhập 8 số cuối Công Tơ';
+                        locNameInput.placeholder = 'Nhập 8 số cuối';
                     }
                     locNameInput.value = '';
                 });
