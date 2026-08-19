@@ -58,9 +58,17 @@ function populateDropdown(id1, id2, dataArray, defaultText) {
   if (el2) el2.innerHTML = html;
 }
 
+// --- HÌNH QUAY KHI LOAD DANH SÁCH ---
 function loadInitData() {
   const listElement = document.getElementById("locationList");
-  if(listElement) listElement.innerHTML = "<li>Đang tải dữ liệu...</li>";
+  if(listElement) {
+    listElement.innerHTML = `
+      <li style="text-align: center; padding: 20px;">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDdiZmYiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1kYXNoYXJyYXk9IjIzMCAxMDAiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDEwMCAxMDAiIHRvPSIzNjAgMTAwIDEwMCIgZHVyPSIxcyIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiLz48L2NpcmNsZT48L3N2Zz4=" alt="loading" style="width: 30px; height: 30px; vertical-align: middle; margin-right: 10px;">
+        <span style="font-weight: bold; color: #007bff; vertical-align: middle; font-size: 15px;">Đang lấy danh sách...</span>
+      </li>
+    `;
+  }
 
   fetch(API_URL, {
     method: "POST",
@@ -179,7 +187,7 @@ function renderList(locations) {
   });
 }
 
-// Hàm show thông báo xịn (tự động đóng sau 5s)
+// --- THÔNG BÁO Ở GÓC TRÊN BÊN PHẢI VÀ RỚT DÒNG ---
 function showToast(msg) {
   const oldToast = document.getElementById("custom-toast");
   if (oldToast) oldToast.remove();
@@ -196,12 +204,12 @@ function showToast(msg) {
 
   Object.assign(toast.style, {
     position: "fixed",
-    bottom: "30px",
-    left: "50%",
-    transform: "translateX(-50%) translateY(20px)",
+    top: "20px",            
+    right: "20px",          
+    transform: "translateX(120%)", 
     backgroundColor: bgColor,
     color: "white",
-    padding: "12px 24px",
+    padding: "12px 20px",
     borderRadius: "8px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
     fontSize: "14px",
@@ -209,26 +217,28 @@ function showToast(msg) {
     zIndex: "10000",
     opacity: "0",
     transition: "all 0.3s ease-in-out",
-    whiteSpace: "nowrap",
-    maxWidth: "90%",
-    textAlign: "center"
+    whiteSpace: "normal",   
+    wordWrap: "break-word", 
+    maxWidth: "300px",      
+    textAlign: "left",      
+    lineHeight: "1.4"
   });
 
   document.body.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = "1";
-    toast.style.transform = "translateX(-50%) translateY(0)";
+    toast.style.transform = "translateX(0)";
   }, 10);
 
   setTimeout(() => {
     toast.style.opacity = "0";
-    toast.style.transform = "translateX(-50%) translateY(20px)";
+    toast.style.transform = "translateX(120%)";
     setTimeout(() => toast.remove(), 300);
   }, 5000);
 }
 
-// Thêm vị trí mới (BẮT BUỘC CÓ TỌA ĐỘ MỚI CHO LƯU)
+// --- ÉP BẬT GPS & KIỂM TRA ĐÚNG 8 SỐ CÔNG TƠ KHI THÊM ---
 function getLocation() {
   const searchType = document.getElementById("loai_tim").value;
   const searchValueInput = document.getElementById("locName").value.trim();
@@ -240,6 +250,12 @@ function getLocation() {
     showToast("Vui lòng nhập thông tin tìm kiếm!");
     return;
   }
+  
+  if (searchType === 'NO' && searchValueInput.length !== 8) {
+    showToast("Lỗi: Số công tơ phải nhập đúng 8 ký tự!");
+    return;
+  }
+
   if (!employeeName) {
     showToast("Vui lòng chọn Tên nhân viên!");
     return;
@@ -251,7 +267,6 @@ function getLocation() {
 
   showToast("Đang lấy tọa độ, vui lòng đợi...");
 
-  // Hàm nội bộ để gửi dữ liệu lưu lên Server
   const saveToServer = (lat, lng) => {
     const now = new Date();
     const timeStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
@@ -279,7 +294,7 @@ function getLocation() {
         allLocations.sort((a, b) => parseTimeString(b.time) - parseTimeString(a.time));
         filterLocations();
 
-        showToast(`Đã lưu vị trí: ${res.ma_khang} - ${res.ten_khang}`);
+        showToast(`Đã lưu vị trí: \n${res.ma_khang} - ${res.ten_khang}`);
         document.getElementById("locName").value = searchType === 'MKH' ? 'PB060600' : '';
         document.getElementById("locNote").value = "";
       } else {
@@ -297,15 +312,12 @@ function getLocation() {
     return;
   }
 
-  // Gọi định vị GPS - ÉP BẮT BUỘC
   navigator.geolocation.getCurrentPosition(
     position => {
-      // Thành công lấy được tọa độ thì mới cho chạy hàm saveToServer
       saveToServer(position.coords.latitude, position.coords.longitude);
     },
     error => {
       console.error(error);
-      // Thất bại (chưa bật GPS hoặc rớt mạng) -> Chặn đứng và báo lỗi nền đỏ
       showToast("Lỗi: Vui lòng BẬT ĐỊNH VỊ (GPS) trên máy để lưu!");
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
