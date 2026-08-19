@@ -1,5 +1,87 @@
+// URL của Web App sau khi Deploy từ Google Apps Script
+const API_URL = "AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ"; 
+
+let allLocations = [];
+let currentId = null;
+
+// Khởi chạy khi load trang
+document.addEventListener("DOMContentLoaded", () => {
+  loadLocations();
+  
+  // Sự kiện tìm kiếm realtime trên thanh search
+  const searchBox = document.getElementById("searchBox");
+  if(searchBox) {
+    searchBox.addEventListener("input", filterLocations);
+  }
+});
+
+// Hàm lấy danh sách từ Google Sheets
+function loadLocations() {
+  const listElement = document.getElementById("locationList");
+  if(listElement) listElement.innerHTML = "<li>Đang tải dữ liệu...</li>";
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "GET_LIST" })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === "success") {
+      allLocations = res.data || [];
+      filterLocations();
+    } else {
+      if(listElement) listElement.innerHTML = `<li>Lỗi: ${res.message}</li>`;
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    if(listElement) listElement.innerHTML = `<li>Lỗi kết nối máy chủ!</li>`;
+  });
+}
+
+// Chuyển đổi chuỗi thời gian thành timestamp để sort
+function parseTimeString(timeStr) {
+  if (!timeStr) return 0;
+  const str = String(timeStr).trim();
+  const parts = str.split(/[\s,]+/);
+  if (parts.length >= 2) {
+    const datePart = parts.find(p => p.includes("/"));
+    const timePart = parts.find(p => p.includes(":"));
+    if (datePart && timePart) {
+      const [day, month, year] = datePart.split("/").map(Number);
+      const [hours, minutes, seconds] = timePart.split(":").map(Number);
+      return new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0).getTime();
+    }
+  }
+  const t = Date.parse(str);
+  return isNaN(t) ? 0 : t;
+}
+
+// Lọc danh sách hiển thị
+function filterLocations() {
+  const searchBox = document.getElementById("searchBox");
+  const query = searchBox ? searchBox.value.toLowerCase().trim() : "";
+  
+  if (!query) {
+    renderList(allLocations);
+    return;
+  }
+
+  const filtered = allLocations.filter(loc => {
+    const mk = (loc.ma_khang || "").toLowerCase();
+    const tk = (loc.ten_khang || "").toLowerCase();
+    const sct = (loc.so_cto || "").toLowerCase();
+    return mk.includes(query) || tk.includes(query) || sct.includes(query);
+  });
+  renderList(filtered);
+}
+
+// Render danh sách ra màn hình
 function renderList(locations) {
   const listElement = document.getElementById("locationList");
+  if(!listElement) return;
+  
   listElement.innerHTML = "";
   if (locations.length === 0) {
     listElement.innerHTML = "<li>Không có dữ liệu.</li>";
@@ -30,6 +112,7 @@ function renderList(locations) {
   });
 }
 
+// Thêm vị trí mới (lấy tọa độ GPS)
 function getLocation() {
   const searchType = document.getElementById("searchType").value;
   const searchValueInput = document.getElementById("searchValue").value.trim();
@@ -115,6 +198,28 @@ function getLocation() {
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
   );
+}
+
+// ---- CÁC HÀM XỬ LÝ MODAL (SỬA & XÓA) ----
+
+function openEditModal(id) {
+  currentId = id;
+  const loc = allLocations.find(item => String(item.id) === String(id));
+  if (loc) {
+    document.getElementById("editSearchType").value = "MKH"; 
+    document.getElementById("editSearchValue").value = loc.ma_khang || "";
+    document.getElementById("editEmployeeName").value = loc.ten_nvien || "";
+    document.getElementById("editJobTitle").value = loc.ten_cviec || "";
+    document.getElementById("editNoteContent").value = loc.note || "";
+    document.getElementById("editUpdateGps").checked = false;
+    document.getElementById("editStatusMsg").innerText = "";
+    document.getElementById("editModal").style.display = "block";
+  }
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+  currentId = null;
 }
 
 function saveEditLocation() {
@@ -245,4 +350,42 @@ function saveEditLocation() {
       console.error(err);
     });
   }
+}
+
+function openConfirmModal(id) {
+  currentId = id;
+  document.getElementById("confirmModal").style.display = "block";
+}
+
+function closeConfirmModal() {
+  document.getElementById("confirmModal").style.display = "none";
+  currentId = null;
+}
+
+function deleteLocation() {
+  if (!currentId) return;
+  const btn = document.getElementById("btnConfirmDelete");
+  if(btn) btn.disabled = true;
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "DELETE", id: currentId })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if(btn) btn.disabled = false;
+    if (res.status === "success") {
+      allLocations = allLocations.filter(loc => String(loc.id) !== String(currentId));
+      filterLocations();
+      closeConfirmModal();
+    } else {
+      alert("Lỗi khi xóa: " + res.message);
+    }
+  })
+  .catch(err => {
+    if(btn) btn.disabled = false;
+    alert("Lỗi kết nối máy chủ!");
+    console.error(err);
+  });
 }
