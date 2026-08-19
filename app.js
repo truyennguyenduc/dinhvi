@@ -1,5 +1,5 @@
 // URL của Web App sau khi Deploy từ Google Apps Script
-const API_URL = "AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ"; 
+const API_URL = "https://script.google.com/macros/s/AKfycby_pM4151Q4xksPdnJkFflE3TNVJEO1R-WKuewTwukJZ-8fee26sBH-eHE8pl5EQMLSEQ/exec"; 
 
 let allLocations = [];
 let currentId = null;
