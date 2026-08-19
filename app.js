@@ -282,26 +282,26 @@ function getLocation() {
   const noteContent = document.getElementById("locNote").value.trim();
 
   if (!searchValueInput) {
-    showToast("Vui lòng nhập thông tin tìm kiếm!");
+    showToast("Vui lòng nhập thông tin tìm kiếm...");
     return;
   }
   
   if (searchType === 'MKH' && searchValueInput.length !== 13) {
-    showToast("Lỗi: MKH phải nhập đúng 13 ký tự!");
+    showToast("Lỗi: MKH phải nhập đúng 13 ký tự");
     return;
   }
   
   if (searchType === 'NO' && searchValueInput.length !== 8) {
-    showToast("Lỗi: Số công tơ phải nhập đúng 8 ký tự!");
+    showToast("Lỗi: Số công tơ phải nhập đúng 8 ký tự cuối.");
     return;
   }
 
   if (!employeeName) {
-    showToast("Vui lòng chọn Tên nhân viên!");
+    showToast("Vui lòng chọn Tên nhân viên");
     return;
   }
   if (!jobTitle) {
-    showToast("Vui lòng chọn Tên công việc!");
+    showToast("Vui lòng chọn Tên công việc");
     return;
   }
 
@@ -351,7 +351,7 @@ function getLocation() {
   };
 
   if (!navigator.geolocation) {
-    showToast("Lỗi: Trình duyệt của bạn không hỗ trợ định vị GPS!");
+    showToast("Lỗi: Trình duyệt của bạn không hỗ trợ định vị GPS");
     return;
   }
 
@@ -361,7 +361,7 @@ function getLocation() {
     },
     error => {
       console.error(error);
-      showToast("Lỗi: Vui lòng BẬT ĐỊNH VỊ (GPS) trên máy để lưu!");
+      showToast("Lỗi: Vui lòng BẬT ĐỊNH VỊ (GPS) trên máy để lưu.");
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
   );
@@ -399,12 +399,12 @@ function saveEditLocation() {
   const password = document.getElementById("editPassword").value.trim();
 
   if (!newSearchValue || !newEmployee || !newJob) {
-    showToast("Vui lòng nhập đủ thông tin bắt buộc!");
+    showToast("Vui lòng nhập đủ thông tin bắt buộc");
     return;
   }
 
   if (!password) {
-    showToast("Lỗi: Vui lòng nhập Mật khẩu nhân viên để xác nhận sửa!");
+    showToast("Lỗi: Vui lòng nhập Mật khẩu nhân viên để xác nhận sửa");
     return;
   }
 
@@ -437,20 +437,20 @@ function saveEditLocation() {
         }
         filterLocations();
         closeEditModal();
-        showToast("Cập nhật thành công!");
+        showToast("Cập nhật định vị thành công");
       } else {
         showToast("Lỗi: " + res.message);
       }
     })
     .catch(err => {
-      showToast("Lỗi kết nối máy chủ!");
+      showToast("Lỗi kết nối máy chủ thất bại.");
       console.error(err);
     });
   };
 
   if (updateCoords) {
     if (!navigator.geolocation) {
-      showToast("Lỗi: Trình duyệt không hỗ trợ GPS!");
+      showToast("Lỗi: Trình duyệt không hỗ trợ GPS");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -507,7 +507,7 @@ function deleteLocation() {
       allLocations = allLocations.filter(loc => String(loc.id) !== String(currentId));
       filterLocations();
       closeConfirmModal();
-      showToast("Xóa thành công!");
+      showToast("Xóa khách hàng thành công");
     } else {
       showToast("Lỗi: " + res.message);
     }
