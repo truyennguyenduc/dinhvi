@@ -170,20 +170,37 @@ function renderList(locations) {
 
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
     
-    // Xử lý chuyển đổi ngày từ chuẩn ISO sang đúng định dạng dd/mm/yyyy
+    // --- BẮT ĐẦU ĐOẠN XỬ LÝ LỌC NGÀY ---
     let dateOnly = "---";
     if (loc.time) {
-        const d = new Date(loc.time);
-        if (!isNaN(d.getTime())) {
-            const day = d.getDate().toString().padStart(2, '0');
-            const month = (d.getMonth() + 1).toString().padStart(2, '0');
-            const year = d.getFullYear();
-            dateOnly = `${day}/${month}/${year}`;
+        const strTime = String(loc.time).trim();
+        
+        // Dùng Regex tìm đúng cụm có dạng số/số/số (vd: 18/8/2026 hoặc 19/08/2026)
+        const dateMatch = strTime.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
+        
+        if (dateMatch) {
+            // Nếu tìm thấy, lấy đúng ngày tháng năm đó
+            dateOnly = dateMatch[0]; 
+            
+            // Chuẩn hóa luôn (vd: 18/8/2026 -> 18/08/2026) cho đồng bộ và đẹp mắt
+            let parts = dateOnly.split('/');
+            if(parts.length === 3) {
+                dateOnly = `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+            }
         } else {
-            // Backup nếu lỗi
-            dateOnly = loc.time.split('T')[0];
+            // Backup nếu dữ liệu dạng ISO chuẩn quốc tế (2026-08-19T...)
+            const d = new Date(strTime);
+            if (!isNaN(d.getTime())) {
+                const day = d.getDate().toString().padStart(2, '0');
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                dateOnly = `${day}/${month}/${d.getFullYear()}`;
+            } else {
+                // Bí quá thì cắt bỏ phần T hoặc khoảng trắng
+                dateOnly = strTime.split(/[ T]/)[0]; 
+            }
         }
     }
+    // --- KẾT THÚC ĐOẠN XỬ LÝ LỌC NGÀY ---
     
     li.innerHTML = `
       <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
