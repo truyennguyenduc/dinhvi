@@ -58,7 +58,6 @@ function populateDropdown(id1, id2, dataArray, defaultText) {
   if (el2) el2.innerHTML = html;
 }
 
-// --- HÌNH QUAY KHI LOAD DANH SÁCH ---
 function loadInitData() {
   const listElement = document.getElementById("locationList");
   if(listElement) {
@@ -165,8 +164,14 @@ function renderList(locations) {
   
   locations.forEach(loc => {
     const li = document.createElement("li");
+    // CHỖ NÀY FIX LỖI CLICK ĐỂ XỔ XUỐNG
+    li.onclick = function() {
+        this.classList.toggle("selected");
+    };
+
     const mapsUrl = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
     
+    // THÊM event.stopPropagation() ĐỂ CLICK NÚT KHÔNG BỊ ĐÓNG LIST
     li.innerHTML = `
       <div class="loc-name">${loc.ma_khang} ${loc.ten_khang ? `- ${loc.ten_khang}` : ""}</div>
       <div class="loc-job" style="color: #d9534f; font-weight: bold; font-size: 12px; margin-bottom: 4px;">
@@ -179,15 +184,14 @@ function renderList(locations) {
         ${(loc.lat && loc.lng) ? `<a href="${mapsUrl}" target="_blank" class="maps-link">Xem trên Google Maps</a>` : `<span style="color:#888; font-size: 13px;">Không có tọa độ</span>`}
       </div>
       <div class="action-bar">
-        <button class="btn-edit" onclick="openEditModal('${loc.id}')">Sửa</button>
-        <button class="btn-delete" onclick="openConfirmModal('${loc.id}')">Xóa</button>
+        <button class="btn-edit" onclick="event.stopPropagation(); openEditModal('${loc.id}')">Sửa</button>
+        <button class="btn-delete" onclick="event.stopPropagation(); openConfirmModal('${loc.id}')">Xóa</button>
       </div>
     `;
     listElement.appendChild(li);
   });
 }
 
-// --- THÔNG BÁO Ở GÓC TRÊN BÊN PHẢI VÀ RỚT DÒNG ---
 function showToast(msg) {
   const oldToast = document.getElementById("custom-toast");
   if (oldToast) oldToast.remove();
@@ -198,7 +202,7 @@ function showToast(msg) {
 
   let bgColor = "#28a745"; 
   let msgLower = msg.toLowerCase();
-  if (msgLower.includes("lỗi") || msgLower.includes("vui lòng") || msgLower.includes("không") || msgLower.includes("hủy")) {
+  if (msgLower.includes("lỗi") || msgLower.includes("vui lòng") || msgLower.includes("không") || msgLower.includes("hủy") || msgLower.includes("sai")) {
     bgColor = "#dc3545"; 
   }
 
@@ -238,7 +242,6 @@ function showToast(msg) {
   }, 5000);
 }
 
-// --- ÉP BẬT GPS & KIỂM TRA ĐÚNG 8 SỐ CÔNG TƠ KHI THÊM ---
 function getLocation() {
   const searchType = document.getElementById("loai_tim").value;
   const searchValueInput = document.getElementById("locName").value.trim();
@@ -329,7 +332,7 @@ function getLocation() {
   );
 }
 
-// ---- CÁC HÀM XỬ LÝ MODAL (SỬA & XÓA) ----
+// ---- CÁC HÀM XỬ LÝ MODAL SỬA & XÓA ----
 function openEditModal(id) {
   currentId = id;
   const loc = allLocations.find(item => String(item.id) === String(id));
@@ -339,6 +342,11 @@ function openEditModal(id) {
     document.getElementById("editEmployeeSelect").value = loc.ten_nvien || "";
     document.getElementById("editJobSelect").value = loc.ten_cviec || "";
     document.getElementById("editNoteInput").value = loc.note || "";
+    
+    // Reset checkbox tọa độ và mật khẩu
+    document.getElementById("editUpdateCoords").checked = false;
+    document.getElementById("editPassword").value = "";
+
     document.getElementById("editModal").style.display = "flex";
   }
 }
@@ -354,47 +362,84 @@ function saveEditLocation() {
   const newEmployee = document.getElementById("editEmployeeSelect").value;
   const newJob = document.getElementById("editJobSelect").value;
   const newNote = document.getElementById("editNoteInput").value.trim();
+  const updateCoords = document.getElementById("editUpdateCoords").checked;
+  const password = document.getElementById("editPassword").value.trim();
 
   if (!newSearchValue || !newEmployee || !newJob) {
     showToast("Vui lòng nhập đủ thông tin bắt buộc!");
     return;
   }
 
-  showToast("Đang cập nhật...");
+  if (!password) {
+    showToast("Lỗi: Vui lòng nhập Mật khẩu nhân viên để xác nhận sửa!");
+    return;
+  }
 
-  fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      action: "EDIT", id: currentId, search_type: newSearchType, search_value: newSearchValue,
-      ten_nvien: newEmployee, ten_cviec: newJob, note: newNote
+  showToast("Đang xử lý...");
+
+  const sendEditRequest = (lat = "", lng = "", time = "") => {
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "EDIT", id: currentId, search_type: newSearchType, search_value: newSearchValue,
+        ten_nvien: newEmployee, ten_cviec: newJob, note: newNote, mat_khau: password,
+        lat: lat, lng: lng, time: time
+      })
     })
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "success") {
-      const loc = allLocations.find(item => String(item.id) === String(currentId));
-      if (loc) {
-        loc.ma_khang = res.ma_khang; loc.ten_khang = res.ten_khang;
-        loc.so_cto = res.so_cto; loc.ma_tram = res.ma_tram;
-        loc.ten_tram = res.ten_tram; loc.so_cot = res.so_cot;
-        loc.ten_nvien = newEmployee; loc.ten_cviec = newJob; loc.note = newNote;
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        const loc = allLocations.find(item => String(item.id) === String(currentId));
+        if (loc) {
+          loc.ma_khang = res.ma_khang; loc.ten_khang = res.ten_khang;
+          loc.so_cto = res.so_cto; loc.ma_tram = res.ma_tram;
+          loc.ten_tram = res.ten_tram; loc.so_cot = res.so_cot;
+          loc.ten_nvien = newEmployee; loc.ten_cviec = newJob; loc.note = newNote;
+          if (lat && lng) {
+            loc.lat = lat; loc.lng = lng; loc.time = time;
+          }
+        }
+        filterLocations();
+        closeEditModal();
+        showToast("Cập nhật thành công!");
+      } else {
+        showToast("Lỗi: " + res.message);
       }
-      filterLocations();
-      closeEditModal();
-      showToast("Cập nhật thành công!");
-    } else {
-      showToast("Lỗi: " + res.message);
+    })
+    .catch(err => {
+      showToast("Lỗi kết nối máy chủ!");
+      console.error(err);
+    });
+  };
+
+  // Nếu muốn cập nhật tọa độ
+  if (updateCoords) {
+    if (!navigator.geolocation) {
+      showToast("Lỗi: Trình duyệt không hỗ trợ GPS!");
+      return;
     }
-  })
-  .catch(err => {
-    showToast("Lỗi kết nối máy chủ!");
-    console.error(err);
-  });
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const now = new Date();
+        const timeStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        sendEditRequest(position.coords.latitude, position.coords.longitude, timeStr);
+      },
+      error => {
+        console.error(error);
+        showToast("Lỗi: Không lấy được tọa độ GPS, vui lòng BẬT ĐỊNH VỊ!");
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    );
+  } else {
+    // Không cập nhật tọa độ
+    sendEditRequest();
+  }
 }
 
 function openConfirmModal(id) {
   currentId = id;
+  document.getElementById("deletePassword").value = ""; // Xóa trắng MK
   document.getElementById("confirmModal").style.display = "flex";
 }
 
@@ -405,13 +450,20 @@ function closeConfirmModal() {
 
 function deleteLocation() {
   if (!currentId) return;
+  const password = document.getElementById("deletePassword").value.trim();
+  
+  if (!password) {
+    showToast("Lỗi: Vui lòng nhập Mật khẩu nhân viên để xác nhận xóa!");
+    return;
+  }
+
   const btn = document.getElementById("btnConfirmDelete");
   if(btn) btn.disabled = true;
 
   fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "DELETE", id: currentId })
+    body: JSON.stringify({ action: "DELETE", id: currentId, mat_khau: password })
   })
   .then(res => res.json())
   .then(res => {
@@ -422,7 +474,7 @@ function deleteLocation() {
       closeConfirmModal();
       showToast("Xóa thành công!");
     } else {
-      showToast("Lỗi khi xóa: " + res.message);
+      showToast("Lỗi: " + res.message);
     }
   })
   .catch(err => {
