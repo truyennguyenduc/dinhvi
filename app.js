@@ -302,12 +302,12 @@ function getLocation() {
   }
   
   if (searchType === 'MKH' && searchValueInput.length !== 13) {
-    showToast("Lỗi: MKH phải nhập đúng 13 ký tự");
+    showToast("Mã KH phải nhập đúng 13 ký tự");
     return;
   }
   
   if (searchType === 'NO' && searchValueInput.length !== 8) {
-    showToast("Lỗi: Số công tơ phải nhập đúng 8 ký tự cuối.");
+    showToast("Số công tơ phải nhập đúng 8 ký tự cuối");
     return;
   }
 
@@ -368,7 +368,7 @@ function getLocation() {
   };
 
   if (!navigator.geolocation) {
-    showToast("Lỗi: Trình duyệt của bạn không hỗ trợ định vị GPS");
+    showToast("Trình duyệt của bạn không hỗ trợ định vị GPS");
     return;
   }
 
@@ -378,7 +378,7 @@ function getLocation() {
     },
     error => {
       console.error(error);
-      showToast("Lỗi: Vui lòng BẬT ĐỊNH VỊ (GPS) trên máy để lưu.");
+      showToast("Vui lòng bật định vị (GPS) trên máy để lưu.");
     },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
   );
@@ -421,7 +421,7 @@ function saveEditLocation() {
   }
 
   if (!password) {
-    showToast("Lỗi: Vui lòng nhập Mật khẩu nhân viên để xác nhận sửa");
+    showToast("Vui lòng nhập Mật khẩu để xác nhận sửa");
     return;
   }
 
@@ -480,7 +480,7 @@ function saveEditLocation() {
       },
       error => {
         console.error(error);
-        showToast("Lỗi: Không lấy được tọa độ GPS, vui lòng BẬT ĐỊNH VỊ!");
+        showToast("Không lấy được tọa độ GPS, vui lòng bật định vị");
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
@@ -505,7 +505,7 @@ function deleteLocation() {
   const password = document.getElementById("deletePassword").value.trim();
   
   if (!password) {
-    showToast("Lỗi: Vui lòng nhập Mật khẩu nhân viên để xác nhận xóa!");
+    showToast("Vui lòng nhập Mật khẩu để xác nhận xóa");
     return;
   }
 
